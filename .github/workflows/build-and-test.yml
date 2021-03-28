@@ -14,3 +14,5 @@ jobs:
         uses: ichiro-its/ros2-ci@v0.4.1
         with:
           ros2-distro: foxy
+          apt-packages: git
+          pre-build: git clone https://github.com/threeal/tosshin_interfaces /ws/tosshin_interfaces
