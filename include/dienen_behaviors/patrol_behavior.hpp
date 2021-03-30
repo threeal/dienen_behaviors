@@ -25,6 +25,7 @@
 #include <tosshin_interfaces/msg/maneuver.hpp>
 #include <tosshin_interfaces/msg/orientation.hpp>
 #include <tosshin_interfaces/msg/position.hpp>
+#include <tosshin_interfaces/srv/configure_maneuver.hpp>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -37,8 +38,9 @@ namespace dienen_behaviors
 using Maneuver = tosshin_interfaces::msg::Maneuver;
 using Orientation = tosshin_interfaces::msg::Orientation;
 using Position = tosshin_interfaces::msg::Position;
+using ConfigureManeuver = tosshin_interfaces::srv::ConfigureManeuver;
 
-class PatrolBehavior : public rclcpp::Node
+class PatrolBehavior
 {
 public:
   PatrolBehavior(std::string node_name, std::string navigation_node_name);
@@ -46,11 +48,16 @@ public:
   void add_point(const Point & point);
   void add_point(const double & x, const double & y);
 
+  void stop();
+
+  rclcpp::Node::SharedPtr node;
+
 private:
   rclcpp::Subscription<Position>::SharedPtr position_subscription;
   rclcpp::Subscription<Orientation>::SharedPtr orientation_subscription;
 
   rclcpp::Publisher<Maneuver>::SharedPtr maneuver_input_publisher;
+  rclcpp::Client<ConfigureManeuver>::SharedPtr configure_maneuver_client;
 
   rclcpp::TimerBase::SharedPtr update_timer;
 
