@@ -44,7 +44,11 @@ int main(int argc, char ** argv)
   patrol_behavior->add_point(-1.0, -1.0);
   patrol_behavior->add_point(-1.0, 1.0);
 
-  rclcpp::spin(patrol_behavior);
+  rclcpp::spin(patrol_behavior->node);
+
+  rclcpp::init(argc, argv);
+
+  patrol_behavior->stop();
 
   rclcpp::shutdown();
 
