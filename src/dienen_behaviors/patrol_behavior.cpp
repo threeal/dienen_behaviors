@@ -139,7 +139,16 @@ PatrolBehavior::PatrolBehavior(
             double b = a + (a < 0.0 ? 360.0 : -360.0);
 
             double yaw = abs(a) < abs(b) ? a : b;
-            double forward = 20.0 - abs(yaw);
+
+            if (yaw > 10.0) {
+              yaw = 10.0;
+            }
+
+            if (yaw < -10.0) {
+              yaw = -10.0;
+            }
+
+            double forward = 20.0 - abs(yaw * 2.0);
 
             if (forward < 0.0) {
               forward = 0.0;
