@@ -18,8 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#include <dienen_behaviors/dienen_behaviors.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <dienen_behaviors/patrol_behavior.hpp>
 
 #include <memory>
 #include <string>

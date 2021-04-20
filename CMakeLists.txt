@@ -19,8 +19,8 @@ find_package(rclcpp REQUIRED)
 find_package(tosshin_interfaces REQUIRED)
 
 add_library(${PROJECT_NAME}
-  "src/${PROJECT_NAME}/patrol_behavior.cpp"
-  "src/${PROJECT_NAME}/point.cpp")
+  "src/patrol_behavior.cpp"
+  "src/point.cpp")
 
 target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -38,7 +38,7 @@ install(TARGETS ${PROJECT_NAME}
   LIBRARY DESTINATION "lib"
   RUNTIME DESTINATION "bin")
 
-add_executable(patrol_behavior "src/patrol_behavior_main.cpp")
+add_executable(patrol_behavior "bin/patrol_behavior.cpp")
 target_include_directories(patrol_behavior PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
