@@ -26,9 +26,9 @@
 
 int main(int argc, char ** argv)
 {
-  if (argc < 2) {
-    std::cout << "Usage: ros2 run dienen_behaviors patrol_behavior" <<
-      " <navigation_node_name>" << std::endl;
+  if (argc < 4) {
+    std::cout << "Usage: ros2 run dienen_behaviors patrol_behavior " <<
+      "<navigation_node_name> <point1_x> <point1_y> [ <point2_x> <point2_y> ... ]" << std::endl;
     return 1;
   }
 
@@ -40,9 +40,9 @@ int main(int argc, char ** argv)
     "patrol_behavior", navigation_node_name
   );
 
-  patrol_behavior->add_point(1.0, 0.0);
-  patrol_behavior->add_point(-1.0, -1.0);
-  patrol_behavior->add_point(-1.0, 1.0);
+  for (int i = 3; i < argc; i += 2) {
+    patrol_behavior->add_point(atof(argv[i - 1]), atof(argv[i]));
+  }
 
   rclcpp::spin(patrol_behavior->node);
 

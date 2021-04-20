@@ -21,16 +21,13 @@
 #ifndef DIENEN_BEHAVIORS__PATROL_BEHAVIOR_HPP_
 #define DIENEN_BEHAVIORS__PATROL_BEHAVIOR_HPP_
 
-#include <dienen_behaviors/point.hpp>
-#include <tosshin_interfaces/msg/maneuver.hpp>
-#include <tosshin_interfaces/msg/orientation.hpp>
-#include <tosshin_interfaces/msg/position.hpp>
-#include <tosshin_interfaces/srv/configure_maneuver.hpp>
-
+#include <tosshin_interfaces/tosshin_interfaces.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <string>
 #include <vector>
+
+#include "./point.hpp"
 
 namespace dienen_behaviors
 {
