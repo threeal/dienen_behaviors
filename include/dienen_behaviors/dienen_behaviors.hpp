@@ -22,6 +22,5 @@
 #define DIENEN_BEHAVIORS__DIENEN_BEHAVIORS_HPP_
 
 #include "./patrol_behavior.hpp"
-#include "./point.hpp"
 
 #endif  // DIENEN_BEHAVIORS__DIENEN_BEHAVIORS_HPP_

@@ -21,13 +21,12 @@
 #ifndef DIENEN_BEHAVIORS__PATROL_BEHAVIOR_HPP_
 #define DIENEN_BEHAVIORS__PATROL_BEHAVIOR_HPP_
 
-#include <tosshin_interfaces/tosshin_interfaces.hpp>
+#include <keisan/keisan.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <tosshin_interfaces/tosshin_interfaces.hpp>
 
 #include <string>
 #include <vector>
-
-#include "./point.hpp"
 
 namespace dienen_behaviors
 {
@@ -42,7 +41,7 @@ class PatrolBehavior
 public:
   PatrolBehavior(std::string node_name, std::string navigation_node_name);
 
-  void add_point(const Point & point);
+  void add_point(const keisan::Point2 & point);
   void add_point(const double & x, const double & y);
 
   void stop();
@@ -58,11 +57,11 @@ private:
 
   rclcpp::TimerBase::SharedPtr update_timer;
 
-  std::vector<Point> points;
+  std::vector<keisan::Point2> points;
 
-  unsigned int current_point_index;
+  size_t current_point_index;
 
-  Point current_position;
+  keisan::Point2 current_position;
   double current_yaw_orientation;
 };
 

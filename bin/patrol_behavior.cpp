@@ -37,8 +37,7 @@ int main(int argc, char ** argv)
   rclcpp::init(argc, argv);
 
   auto patrol_behavior = std::make_shared<dienen_behaviors::PatrolBehavior>(
-    "patrol_behavior", navigation_node_name
-  );
+    "patrol_behavior", navigation_node_name);
 
   for (int i = 3; i < argc; i += 2) {
     patrol_behavior->add_point(atof(argv[i - 1]), atof(argv[i]));

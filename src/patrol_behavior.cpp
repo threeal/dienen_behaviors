@@ -28,8 +28,6 @@ namespace dienen_behaviors
 
 using namespace std::chrono_literals;
 
-const double PI = atan(1) * 4;
-
 PatrolBehavior::PatrolBehavior(
   std::string node_name = "patrol_behavior",
   std::string navigation_node_name = "navigation")
@@ -48,14 +46,12 @@ PatrolBehavior::PatrolBehavior(
         [this](const Position::SharedPtr position) {
           current_position.x = position->x;
           current_position.y = position->y;
-        }
-      );
+        });
 
       RCLCPP_INFO_STREAM(
         node->get_logger(),
         "Position subscription initialized on " <<
-          position_subscription->get_topic_name() << "!"
-      );
+          position_subscription->get_topic_name() << "!");
     }
 
     // Initialize the orientation subscription
@@ -64,40 +60,34 @@ PatrolBehavior::PatrolBehavior(
         navigation_node_name + "/orientation", 10,
         [this](const Orientation::SharedPtr orientation) {
           current_yaw_orientation = orientation->yaw;
-        }
-      );
+        });
 
       RCLCPP_INFO_STREAM(
         node->get_logger(),
         "Orientation subscription initialized on " <<
-          orientation_subscription->get_topic_name() << "!"
-      );
+          orientation_subscription->get_topic_name() << "!");
     }
 
     // Initialize the maneuver input publisher
     {
       maneuver_input_publisher = node->create_publisher<Maneuver>(
-        navigation_node_name + "/maneuver_input", 10
-      );
+        navigation_node_name + "/maneuver_input", 10);
 
       RCLCPP_INFO_STREAM(
         node->get_logger(),
         "Maneuver input publisher initialized on " <<
-          maneuver_input_publisher->get_topic_name() << "!"
-      );
+          maneuver_input_publisher->get_topic_name() << "!");
     }
 
     // Initialize the configure maneuver client
     {
       configure_maneuver_client = node->create_client<ConfigureManeuver>(
-        navigation_node_name + "/configure_maneuver"
-      );
+        navigation_node_name + "/configure_maneuver");
 
       RCLCPP_INFO_STREAM(
         node->get_logger(),
         "Configure maneuver client initialized on " <<
-          configure_maneuver_client->get_service_name() << "!"
-      );
+          configure_maneuver_client->get_service_name() << "!");
     }
 
     // Initialize the update timer
@@ -125,30 +115,30 @@ PatrolBehavior::PatrolBehavior(
           auto & target_point = points[current_point_index];
 
           // Shift target point if near
-          if (Point::distance(current_position, target_point) <= 0.1) {
+          auto distance = keisan::Point2::distance_between(current_position, target_point);
+          if (distance <= 0.1) {
             current_point_index = (current_point_index + 1) % points.size();
-
             return maneuver_input_publisher->publish(maneuver);
           }
 
           // Calculate and publish an input maneuver
           {
-            double target_direction = Point::direction(current_position, target_point);
+            double target_direction = atan2(
+              target_point.y - current_position.y,
+              target_point.x - current_position.x);
 
-            double a = target_direction - current_yaw_orientation;
-            double b = a + (a < 0.0 ? 360.0 : -360.0);
+            double yaw = keisan::delta_deg(
+              current_yaw_orientation, keisan::rad_to_deg(target_direction));
 
-            double yaw = abs(a) < abs(b) ? a : b;
-
-            if (yaw > 10.0) {
-              yaw = 10.0;
+            if (yaw > 40.0) {
+              yaw = 40.0;
             }
 
-            if (yaw < -10.0) {
-              yaw = -10.0;
+            if (yaw < -40.0) {
+              yaw = -40.0;
             }
 
-            double forward = 20.0 - abs(yaw * 2.0);
+            double forward = 60.0 - abs(yaw * 3.0);
 
             if (forward < 0.0) {
               forward = 0.0;
@@ -165,14 +155,14 @@ PatrolBehavior::PatrolBehavior(
   }
 }
 
-void PatrolBehavior::add_point(const Point & point)
+void PatrolBehavior::add_point(const keisan::Point2 & point)
 {
   points.push_back(point);
 }
 
 void PatrolBehavior::add_point(const double & x, const double & y)
 {
-  add_point(Point(x, y));
+  add_point(keisan::Point2(x, y));
 }
 
 void PatrolBehavior::stop()
@@ -192,8 +182,7 @@ void PatrolBehavior::stop()
       RCLCPP_ERROR_STREAM(
         node->get_logger(),
         "Failed to call service on " <<
-          configure_maneuver_client->get_service_name() << "!"
-      );
+          configure_maneuver_client->get_service_name() << "!");
     }
   }
 }
