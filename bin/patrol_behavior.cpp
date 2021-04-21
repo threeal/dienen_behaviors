@@ -18,61 +18,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <dienen_behaviors/point.hpp>
+#include <dienen_behaviors/dienen_behaviors.hpp>
+#include <rclcpp/rclcpp.hpp>
 
-#include <cmath>
+#include <memory>
+#include <string>
 
-namespace dienen_behaviors
+int main(int argc, char ** argv)
 {
-
-const double PI = atan(1) * 4;
-
-Point::Point(const double & x, const double & y)
-: x(x), y(y)
-{
-}
-
-Point::Point(const Point & other)
-: Point(other.x, other.y)
-{
-}
-
-Point::Point()
-: Point(0, 0)
-{
-}
-
-double Point::distance(const Point & a, const Point & b)
-{
-  return sqrt(pow(b.x - a.x, 2.0) + pow(b.y - a.y, 2.0));
-}
-
-double Point::direction(const Point & a, const Point & b)
-{
-  double angle = atan2(b.y - a.y, b.x - a.x);
-
-  while (angle < PI) {
-    angle += 2 * PI;
+  if (argc < 4) {
+    std::cout << "Usage: ros2 run dienen_behaviors patrol_behavior " <<
+      "<navigation_node_name> <point1_x> <point1_y> [ <point2_x> <point2_y> ... ]" << std::endl;
+    return 1;
   }
 
-  while (angle > PI) {
-    angle -= 2 * PI;
+  std::string navigation_node_name = argv[1];
+
+  rclcpp::init(argc, argv);
+
+  auto patrol_behavior = std::make_shared<dienen_behaviors::PatrolBehavior>(
+    "patrol_behavior", navigation_node_name);
+
+  for (int i = 3; i < argc; i += 2) {
+    patrol_behavior->add_point(atof(argv[i - 1]), atof(argv[i]));
   }
 
-  return angle * 180.0 / PI;
+  rclcpp::spin(patrol_behavior->get_node());
+
+  rclcpp::init(argc, argv);
+
+  patrol_behavior->stop();
+
+  rclcpp::shutdown();
+
+  return 0;
 }
-
-Point & Point::operator=(const Point & other)
-{
-  this->x = other.x;
-  this->y = other.y;
-
-  return *this;
-}
-
-Point Point::operator-(const Point & other)
-{
-  return Point(x - other.x, y - other.y);
-}
-
-}  // namespace dienen_behaviors

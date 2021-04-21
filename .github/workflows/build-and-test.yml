@@ -15,4 +15,4 @@ jobs:
         with:
           ros2-distro: foxy
           apt-packages: git
-          pre-build: git clone https://github.com/threeal/tosshin_interfaces /ws/tosshin_interfaces
+          pre-build: git clone https://github.com/threeal/tosshin_interfaces /ws/tosshin_interfaces && git clone https://github.com/ichiro-its/keisan /ws/keisan

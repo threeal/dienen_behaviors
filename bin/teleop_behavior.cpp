@@ -18,31 +18,34 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef DIENEN_BEHAVIORS__POINT_HPP_
-#define DIENEN_BEHAVIORS__POINT_HPP_
+#include <dienen_behaviors/dienen_behaviors.hpp>
+#include <rclcpp/rclcpp.hpp>
 
-#include <list>
+#include <memory>
+#include <string>
 
-namespace dienen_behaviors
+int main(int argc, char ** argv)
 {
+  if (argc < 2) {
+    std::cout << "Usage: ros2 run dienen_behaviors teleop_behavior " <<
+      "<navigation_node_name>" << std::endl;
+    return 1;
+  }
 
-struct Point
-{
-  Point(const double & x, const double & y);
-  Point(const Point & other);
-  Point();
+  std::string navigation_node_name = argv[1];
 
-  static double distance(const Point & a, const Point & b);
-  static double direction(const Point & a, const Point & b);
+  rclcpp::init(argc, argv);
 
-  Point & operator=(const Point & other);
+  auto teleop_behavior = std::make_shared<dienen_behaviors::TeleopBehavior>(
+    "teleop_behavior", navigation_node_name);
 
-  Point operator-(const Point & other);
+  rclcpp::spin(teleop_behavior->get_node());
 
-  double x;
-  double y;
-};
+  rclcpp::init(argc, argv);
 
-}  // namespace dienen_behaviors
+  teleop_behavior->stop();
 
-#endif  // DIENEN_BEHAVIORS__POINT_HPP_
+  rclcpp::shutdown();
+
+  return 0;
+}

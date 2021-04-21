@@ -18,35 +18,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef DIENEN_BEHAVIORS__PATROL_BEHAVIOR_HPP_
-#define DIENEN_BEHAVIORS__PATROL_BEHAVIOR_HPP_
+#ifndef DIENEN_BEHAVIORS__TELEOP_BEHAVIOR_HPP_
+#define DIENEN_BEHAVIORS__TELEOP_BEHAVIOR_HPP_
 
-#include <keisan/keisan.hpp>
+#include <termios.h>
 
 #include <string>
-#include <vector>
 
 #include "./navigation_behavior.hpp"
 
 namespace dienen_behaviors
 {
 
-class PatrolBehavior : public NavigationBehavior
+class TeleopBehavior : public NavigationBehavior
 {
 public:
-  PatrolBehavior(std::string node_name, std::string navigation_node_name);
+  TeleopBehavior(std::string node_name, std::string navigation_node_name);
+  ~TeleopBehavior();
 
   void on_update() override;
 
-  void add_point(const keisan::Point2 & point);
-  void add_point(const double & x, const double & y);
-
 private:
-  std::vector<keisan::Point2> points;
-
-  size_t current_point_index;
+  struct termios original_term;
+  struct termios nonblock_term;
 };
 
 }  // namespace dienen_behaviors
 
-#endif  // DIENEN_BEHAVIORS__PATROL_BEHAVIOR_HPP_
+#endif  // DIENEN_BEHAVIORS__TELEOP_BEHAVIOR_HPP_

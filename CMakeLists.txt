@@ -15,18 +15,21 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(keisan REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(tosshin_interfaces REQUIRED)
 
 add_library(${PROJECT_NAME}
-  "src/${PROJECT_NAME}/patrol_behavior.cpp"
-  "src/${PROJECT_NAME}/point.cpp")
+  "src/navigation_behavior.cpp"
+  "src/patrol_behavior.cpp"
+  "src/teleop_behavior.cpp")
 
 target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 
 ament_target_dependencies(${PROJECT_NAME}
+  keisan
   rclcpp
   tosshin_interfaces)
 
@@ -38,13 +41,23 @@ install(TARGETS ${PROJECT_NAME}
   LIBRARY DESTINATION "lib"
   RUNTIME DESTINATION "bin")
 
-add_executable(patrol_behavior "src/patrol_behavior_main.cpp")
+add_executable(patrol_behavior "bin/patrol_behavior.cpp")
+
 target_include_directories(patrol_behavior PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
+
 target_link_libraries(patrol_behavior ${PROJECT_NAME})
 
-install(TARGETS patrol_behavior
+add_executable(teleop_behavior "bin/teleop_behavior.cpp")
+
+target_include_directories(teleop_behavior PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+
+target_link_libraries(teleop_behavior ${PROJECT_NAME})
+
+install(TARGETS patrol_behavior teleop_behavior
   DESTINATION "lib/${PROJECT_NAME}")
 
 if(BUILD_TESTING)

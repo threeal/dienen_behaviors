@@ -18,39 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <rclcpp/rclcpp.hpp>
-#include <dienen_behaviors/patrol_behavior.hpp>
+#ifndef DIENEN_BEHAVIORS__DIENEN_BEHAVIORS_HPP_
+#define DIENEN_BEHAVIORS__DIENEN_BEHAVIORS_HPP_
 
-#include <memory>
-#include <string>
+#include "./navigation_behavior.hpp"
+#include "./patrol_behavior.hpp"
+#include "./teleop_behavior.hpp"
 
-int main(int argc, char ** argv)
-{
-  if (argc < 2) {
-    std::cout << "Usage: ros2 run dienen_behaviors patrol_behavior" <<
-      " <navigation_node_name>" << std::endl;
-    return 1;
-  }
-
-  std::string navigation_node_name = argv[1];
-
-  rclcpp::init(argc, argv);
-
-  auto patrol_behavior = std::make_shared<dienen_behaviors::PatrolBehavior>(
-    "patrol_behavior", navigation_node_name
-  );
-
-  patrol_behavior->add_point(1.0, 0.0);
-  patrol_behavior->add_point(-1.0, -1.0);
-  patrol_behavior->add_point(-1.0, 1.0);
-
-  rclcpp::spin(patrol_behavior->node);
-
-  rclcpp::init(argc, argv);
-
-  patrol_behavior->stop();
-
-  rclcpp::shutdown();
-
-  return 0;
-}
+#endif  // DIENEN_BEHAVIORS__DIENEN_BEHAVIORS_HPP_
