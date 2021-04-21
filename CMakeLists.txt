@@ -20,6 +20,7 @@ find_package(rclcpp REQUIRED)
 find_package(tosshin_interfaces REQUIRED)
 
 add_library(${PROJECT_NAME}
+  "src/navigation_behavior.cpp"
   "src/patrol_behavior.cpp")
 
 target_include_directories(${PROJECT_NAME} PUBLIC

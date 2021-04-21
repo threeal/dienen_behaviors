@@ -26,132 +26,68 @@
 namespace dienen_behaviors
 {
 
-using namespace std::chrono_literals;
-
-PatrolBehavior::PatrolBehavior(
-  std::string node_name = "patrol_behavior",
-  std::string navigation_node_name = "navigation")
-: current_point_index(0),
-  current_position(),
-  current_yaw_orientation(0.0)
+PatrolBehavior::PatrolBehavior(std::string node_name, std::string navigation_node_name)
+: NavigationBehavior(node_name, navigation_node_name),
+  current_point_index(0)
 {
-  // Initialize the node
+}
+
+void PatrolBehavior::on_update()
+{
+  // Reset the target maneuver
+  target_forward_maneuver = 0.0;
+  target_left_maneuver = 0.0;
+  target_yaw_maneuver = 0.0;
+
+  if (points.size() < 1) {
+    RCLCPP_WARN_ONCE(node->get_logger(), "Once, no points provided!");
+    return;
+  }
+
+  if (current_point_index >= points.size()) {
+    RCLCPP_WARN(node->get_logger(), "Current point index overflowed!");
+    current_point_index = current_point_index % points.size();
+    return;
+  }
+
+  auto & target_point = points[current_point_index];
+
+  // Shift target point if near
+  auto distance = keisan::Point2::distance_between(current_position, target_point);
+  if (distance <= 0.1) {
+    current_point_index = (current_point_index + 1) % points.size();
+    target_point = points[current_point_index];
+  }
+
+  // Calculate a new target yaw maneuver
   {
-    node = std::make_shared<rclcpp::Node>(node_name);
+    double target_direction = atan2(
+      target_point.y - current_position.y,
+      target_point.x - current_position.x);
 
-    // Initialize the position subscription
-    {
-      position_subscription = node->create_subscription<Position>(
-        navigation_node_name + "/position", 10,
-        [this](const Position::SharedPtr position) {
-          current_position.x = position->x;
-          current_position.y = position->y;
-        });
+    double yaw = keisan::delta_deg(
+      current_yaw_orientation, keisan::rad_to_deg(target_direction));
 
-      RCLCPP_INFO_STREAM(
-        node->get_logger(),
-        "Position subscription initialized on " <<
-          position_subscription->get_topic_name() << "!");
+    if (yaw > 40.0) {
+      yaw = 40.0;
     }
 
-    // Initialize the orientation subscription
-    {
-      orientation_subscription = node->create_subscription<Orientation>(
-        navigation_node_name + "/orientation", 10,
-        [this](const Orientation::SharedPtr orientation) {
-          current_yaw_orientation = orientation->yaw;
-        });
-
-      RCLCPP_INFO_STREAM(
-        node->get_logger(),
-        "Orientation subscription initialized on " <<
-          orientation_subscription->get_topic_name() << "!");
+    if (yaw < -40.0) {
+      yaw = -40.0;
     }
 
-    // Initialize the maneuver input publisher
-    {
-      maneuver_input_publisher = node->create_publisher<Maneuver>(
-        navigation_node_name + "/maneuver_input", 10);
+    target_yaw_maneuver = yaw;
+  }
 
-      RCLCPP_INFO_STREAM(
-        node->get_logger(),
-        "Maneuver input publisher initialized on " <<
-          maneuver_input_publisher->get_topic_name() << "!");
+  // Calculate a new target forward maneuver
+  {
+    double forward = 60.0 - abs(target_yaw_maneuver * 3.0);
+
+    if (forward < 0.0) {
+      forward = 0.0;
     }
 
-    // Initialize the configure maneuver client
-    {
-      configure_maneuver_client = node->create_client<ConfigureManeuver>(
-        navigation_node_name + "/configure_maneuver");
-
-      RCLCPP_INFO_STREAM(
-        node->get_logger(),
-        "Configure maneuver client initialized on " <<
-          configure_maneuver_client->get_service_name() << "!");
-    }
-
-    // Initialize the update timer
-    {
-      update_timer = node->create_wall_timer(
-        30ms, [this]() {
-          Maneuver maneuver;
-
-          maneuver.forward.push_back(0);
-          maneuver.yaw.push_back(0.0);
-
-          if (points.size() < 1) {
-            RCLCPP_WARN_ONCE(node->get_logger(), "Once, no points provided!");
-
-            return maneuver_input_publisher->publish(maneuver);
-          }
-
-          if (current_point_index >= points.size()) {
-            RCLCPP_WARN(node->get_logger(), "Current point index overflowed!");
-            current_point_index = current_point_index % points.size();
-
-            return maneuver_input_publisher->publish(maneuver);
-          }
-
-          auto & target_point = points[current_point_index];
-
-          // Shift target point if near
-          auto distance = keisan::Point2::distance_between(current_position, target_point);
-          if (distance <= 0.1) {
-            current_point_index = (current_point_index + 1) % points.size();
-            return maneuver_input_publisher->publish(maneuver);
-          }
-
-          // Calculate and publish an input maneuver
-          {
-            double target_direction = atan2(
-              target_point.y - current_position.y,
-              target_point.x - current_position.x);
-
-            double yaw = keisan::delta_deg(
-              current_yaw_orientation, keisan::rad_to_deg(target_direction));
-
-            if (yaw > 40.0) {
-              yaw = 40.0;
-            }
-
-            if (yaw < -40.0) {
-              yaw = -40.0;
-            }
-
-            double forward = 60.0 - abs(yaw * 3.0);
-
-            if (forward < 0.0) {
-              forward = 0.0;
-            }
-
-            maneuver.forward[0] = forward;
-            maneuver.yaw[0] = yaw;
-
-            maneuver_input_publisher->publish(maneuver);
-          }
-        }
-      );
-    }
+    target_forward_maneuver = forward;
   }
 }
 
@@ -163,28 +99,6 @@ void PatrolBehavior::add_point(const keisan::Point2 & point)
 void PatrolBehavior::add_point(const double & x, const double & y)
 {
   add_point(keisan::Point2(x, y));
-}
-
-void PatrolBehavior::stop()
-{
-  // Stop the navigation's maneuver
-  {
-    auto request = std::make_shared<ConfigureManeuver::Request>();
-
-    request->maneuver.forward.push_back(0.0);
-    request->maneuver.left.push_back(0.0);
-    request->maneuver.yaw.push_back(0.0);
-
-    auto result_future = configure_maneuver_client->async_send_request(request);
-    auto spin_result = rclcpp::spin_until_future_complete(node, result_future);
-
-    if (spin_result != rclcpp::FutureReturnCode::SUCCESS) {
-      RCLCPP_ERROR_STREAM(
-        node->get_logger(),
-        "Failed to call service on " <<
-          configure_maneuver_client->get_service_name() << "!");
-    }
-  }
 }
 
 }  // namespace dienen_behaviors

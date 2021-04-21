@@ -21,6 +21,7 @@
 #ifndef DIENEN_BEHAVIORS__DIENEN_BEHAVIORS_HPP_
 #define DIENEN_BEHAVIORS__DIENEN_BEHAVIORS_HPP_
 
+#include "./navigation_behavior.hpp"
 #include "./patrol_behavior.hpp"
 
 #endif  // DIENEN_BEHAVIORS__DIENEN_BEHAVIORS_HPP_

@@ -18,39 +18,53 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef DIENEN_BEHAVIORS__PATROL_BEHAVIOR_HPP_
-#define DIENEN_BEHAVIORS__PATROL_BEHAVIOR_HPP_
+#ifndef DIENEN_BEHAVIORS__NAVIGATION_BEHAVIOR_HPP_
+#define DIENEN_BEHAVIORS__NAVIGATION_BEHAVIOR_HPP_
 
 #include <keisan/keisan.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <tosshin_interfaces/tosshin_interfaces.hpp>
 
 #include <string>
-#include <vector>
-
-#include "./navigation_behavior.hpp"
 
 namespace dienen_behaviors
 {
 
-class PatrolBehavior : public NavigationBehavior
+using ManeuverMsg = tosshin_interfaces::msg::Maneuver;
+using OrientationMsg = tosshin_interfaces::msg::Orientation;
+using PositionMsg = tosshin_interfaces::msg::Position;
+using ConfigureManeuverSrv = tosshin_interfaces::srv::ConfigureManeuver;
+
+class NavigationBehavior
 {
 public:
-  PatrolBehavior(std::string node_name, std::string navigation_node_name);
+  NavigationBehavior(std::string node_name, std::string navigation_node_name);
 
-  void on_update() override;
+  virtual void on_update();
 
-  void add_point(const keisan::Point2 & point);
-  void add_point(const double & x, const double & y);
+  void stop();
 
-private:
+  rclcpp::Node::SharedPtr get_node();
+
+protected:
+  rclcpp::Node::SharedPtr node;
+
+  rclcpp::Subscription<PositionMsg>::SharedPtr position_subscription;
+  rclcpp::Subscription<OrientationMsg>::SharedPtr orientation_subscription;
+
+  rclcpp::Publisher<ManeuverMsg>::SharedPtr maneuver_input_publisher;
+  rclcpp::Client<ConfigureManeuverSrv>::SharedPtr configure_maneuver_client;
+
   rclcpp::TimerBase::SharedPtr update_timer;
 
-  std::vector<keisan::Point2> points;
+  keisan::Point2 current_position;
+  double current_yaw_orientation;
 
-  size_t current_point_index;
+  double target_forward_maneuver;
+  double target_left_maneuver;
+  double target_yaw_maneuver;
 };
 
 }  // namespace dienen_behaviors
 
-#endif  // DIENEN_BEHAVIORS__PATROL_BEHAVIOR_HPP_
+#endif  // DIENEN_BEHAVIORS__NAVIGATION_BEHAVIOR_HPP_
