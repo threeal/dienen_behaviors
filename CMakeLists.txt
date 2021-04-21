@@ -21,7 +21,8 @@ find_package(tosshin_interfaces REQUIRED)
 
 add_library(${PROJECT_NAME}
   "src/navigation_behavior.cpp"
-  "src/patrol_behavior.cpp")
+  "src/patrol_behavior.cpp"
+  "src/teleop_behavior.cpp")
 
 target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -41,12 +42,22 @@ install(TARGETS ${PROJECT_NAME}
   RUNTIME DESTINATION "bin")
 
 add_executable(patrol_behavior "bin/patrol_behavior.cpp")
+
 target_include_directories(patrol_behavior PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
+
 target_link_libraries(patrol_behavior ${PROJECT_NAME})
 
-install(TARGETS patrol_behavior
+add_executable(teleop_behavior "bin/teleop_behavior.cpp")
+
+target_include_directories(teleop_behavior PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+
+target_link_libraries(teleop_behavior ${PROJECT_NAME})
+
+install(TARGETS patrol_behavior teleop_behavior
   DESTINATION "lib/${PROJECT_NAME}")
 
 if(BUILD_TESTING)

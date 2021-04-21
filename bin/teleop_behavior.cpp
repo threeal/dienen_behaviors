@@ -18,35 +18,34 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef DIENEN_BEHAVIORS__PATROL_BEHAVIOR_HPP_
-#define DIENEN_BEHAVIORS__PATROL_BEHAVIOR_HPP_
+#include <dienen_behaviors/dienen_behaviors.hpp>
+#include <rclcpp/rclcpp.hpp>
 
-#include <keisan/keisan.hpp>
-
+#include <memory>
 #include <string>
-#include <vector>
 
-#include "./navigation_behavior.hpp"
-
-namespace dienen_behaviors
+int main(int argc, char ** argv)
 {
+  if (argc < 2) {
+    std::cout << "Usage: ros2 run dienen_behaviors teleop_behavior " <<
+      "<navigation_node_name>" << std::endl;
+    return 1;
+  }
 
-class PatrolBehavior : public NavigationBehavior
-{
-public:
-  PatrolBehavior(std::string node_name, std::string navigation_node_name);
+  std::string navigation_node_name = argv[1];
 
-  void on_update() override;
+  rclcpp::init(argc, argv);
 
-  void add_point(const keisan::Point2 & point);
-  void add_point(const double & x, const double & y);
+  auto teleop_behavior = std::make_shared<dienen_behaviors::TeleopBehavior>(
+    "teleop_behavior", navigation_node_name);
 
-private:
-  std::vector<keisan::Point2> points;
+  rclcpp::spin(teleop_behavior->get_node());
 
-  size_t current_point_index;
-};
+  rclcpp::init(argc, argv);
 
-}  // namespace dienen_behaviors
+  teleop_behavior->stop();
 
-#endif  // DIENEN_BEHAVIORS__PATROL_BEHAVIOR_HPP_
+  rclcpp::shutdown();
+
+  return 0;
+}

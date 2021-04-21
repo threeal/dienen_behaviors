@@ -20,7 +20,6 @@
 
 #include <dienen_behaviors/patrol_behavior.hpp>
 
-#include <memory>
 #include <string>
 
 namespace dienen_behaviors
