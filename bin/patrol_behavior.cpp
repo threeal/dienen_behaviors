@@ -26,28 +26,35 @@
 
 int main(int argc, char ** argv)
 {
-  if (argc < 4) {
+  if (argc < 3) {
     std::cout << "Usage: ros2 run dienen_behaviors patrol_behavior " <<
-      "<navigation_node_name> <point1_x> <point1_y> [ <point2_x> <point2_y> ... ]" << std::endl;
+      "<point1_x> <point1_y> [ <point2_x> <point2_y> ... ]" << std::endl;
     return 1;
   }
 
-  std::string navigation_node_name = argv[1];
-
   rclcpp::init(argc, argv);
 
-  auto patrol_behavior = std::make_shared<dienen_behaviors::PatrolBehavior>(
-    "patrol_behavior", navigation_node_name);
+  auto node = std::make_shared<rclcpp::Node>("patrol_behavior");
+  auto patrol_behavior = std::make_shared<dienen_behaviors::PatrolBehavior>(node);
 
-  for (int i = 3; i < argc; i += 2) {
+  for (int i = 2; i < argc; i += 2) {
     patrol_behavior->add_point(atof(argv[i - 1]), atof(argv[i]));
   }
 
-  rclcpp::spin(patrol_behavior->get_node());
+  rclcpp::spin(node);
 
-  rclcpp::init(argc, argv);
+  // Stop before shutting down
+  {
+    if (!rclcpp::ok()) {
+      rclcpp::init(argc, argv);
+    }
 
-  patrol_behavior->stop();
+    try {
+      patrol_behavior->configure_maneuver_to_stop();
+    } catch (std::exception & e) {
+      std::cerr << "Failed to stop the maneuver! " << e.what() << std::endl;
+    }
+  }
 
   rclcpp::shutdown();
 

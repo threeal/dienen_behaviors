@@ -17,10 +17,9 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(keisan REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(tosshin_interfaces REQUIRED)
+find_package(tosshin_cpp REQUIRED)
 
 add_library(${PROJECT_NAME}
-  "src/navigation_behavior.cpp"
   "src/patrol_behavior.cpp"
   "src/teleop_behavior.cpp")
 
@@ -29,9 +28,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   $<INSTALL_INTERFACE:include>)
 
 ament_target_dependencies(${PROJECT_NAME}
-  keisan
-  rclcpp
-  tosshin_interfaces)
+  keisan rclcpp tosshin_cpp)
 
 install(DIRECTORY "include" DESTINATION ".")
 
@@ -65,7 +62,8 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_export_dependencies(rclcpp tosshin_interfaces)
+ament_export_dependencies(rclcpp tosshin_cpp)
 ament_export_include_directories("include")
 ament_export_libraries(${PROJECT_NAME})
+
 ament_package()

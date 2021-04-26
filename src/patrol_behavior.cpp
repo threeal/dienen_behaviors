@@ -20,74 +20,69 @@
 
 #include <dienen_behaviors/patrol_behavior.hpp>
 
-#include <string>
+#include <algorithm>
 
 namespace dienen_behaviors
 {
 
-PatrolBehavior::PatrolBehavior(std::string node_name, std::string navigation_node_name)
-: NavigationBehavior(node_name, navigation_node_name),
-  current_point_index(0)
+using namespace std::chrono_literals;
+
+PatrolBehavior::PatrolBehavior(rclcpp::Node::SharedPtr node)
+: tosshin_cpp::NavigationConsumer(node),
+  point_index(0)
 {
+  // Initialize the update timer
+  update_timer = get_node()->create_wall_timer(
+    10ms, [this]() {
+      on_update();
+    });
 }
 
 void PatrolBehavior::on_update()
 {
+  tosshin_cpp::Maneuver target_maneuver;
+
   // Reset the target maneuver
-  target_forward_maneuver = 0.0;
-  target_left_maneuver = 0.0;
-  target_yaw_maneuver = 0.0;
+  target_maneuver.forward = 0.0;
+  target_maneuver.left = 0.0;
+  target_maneuver.yaw = 0.0;
 
   if (points.size() < 1) {
-    RCLCPP_WARN_ONCE(node->get_logger(), "Once, no points provided!");
-    return;
+    RCLCPP_WARN_ONCE(get_node()->get_logger(), "Once, no point provided!");
+    return set_maneuver(target_maneuver);
   }
 
-  if (current_point_index >= points.size()) {
-    RCLCPP_WARN(node->get_logger(), "Current point index overflowed!");
-    current_point_index = current_point_index % points.size();
-    return;
+  if (point_index >= points.size()) {
+    RCLCPP_WARN(get_node()->get_logger(), "Point index overflowed!");
+    point_index = point_index % points.size();
+    return set_maneuver(target_maneuver);
   }
 
-  auto & target_point = points[current_point_index];
+  auto odometry = get_odometry();
+
+  auto current_point = tosshin_cpp::position_to_point(odometry.position);
+  auto target_point = points[point_index];
 
   // Shift target point if near
-  auto distance = keisan::Point2::distance_between(current_position, target_point);
+  auto distance = keisan::Point2::distance_between(current_point, target_point);
   if (distance <= 0.1) {
-    current_point_index = (current_point_index + 1) % points.size();
-    target_point = points[current_point_index];
+    point_index = (point_index + 1) % points.size();
+    target_point = points[point_index];
   }
 
   // Calculate a new target yaw maneuver
   {
-    double target_direction = atan2(
-      target_point.y - current_position.y,
-      target_point.x - current_position.x);
+    double direction = (target_point - current_point).direction();
+    double yaw = keisan::delta_deg(odometry.orientation.yaw, keisan::rad_to_deg(direction));
 
-    double yaw = keisan::delta_deg(
-      current_yaw_orientation, keisan::rad_to_deg(target_direction));
-
-    if (yaw > 40.0) {
-      yaw = 40.0;
-    }
-
-    if (yaw < -40.0) {
-      yaw = -40.0;
-    }
-
-    target_yaw_maneuver = yaw;
+    target_maneuver.yaw = keisan::clamp_number(yaw, -40.0, 40.0);
   }
 
   // Calculate a new target forward maneuver
-  {
-    double forward = 60.0 - abs(target_yaw_maneuver * 3.0);
+  double forward = keisan::map_number(std::abs(target_maneuver.yaw), 0.0, 15.0, 60.0, 0.0);
+  target_maneuver.forward = std::max(forward, 0.0);
 
-    if (forward < 0.0) {
-      forward = 0.0;
-    }
-
-    target_forward_maneuver = forward;
-  }
+  set_maneuver(target_maneuver);
 }
 
 void PatrolBehavior::add_point(const keisan::Point2 & point)
@@ -95,7 +90,7 @@ void PatrolBehavior::add_point(const keisan::Point2 & point)
   points.push_back(point);
 }
 
-void PatrolBehavior::add_point(const double & x, const double & y)
+void PatrolBehavior::add_point(double x, double y)
 {
   add_point(keisan::Point2(x, y));
 }

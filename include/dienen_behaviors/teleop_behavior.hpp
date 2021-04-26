@@ -21,24 +21,25 @@
 #ifndef DIENEN_BEHAVIORS__TELEOP_BEHAVIOR_HPP_
 #define DIENEN_BEHAVIORS__TELEOP_BEHAVIOR_HPP_
 
+#include <rclcpp/rclcpp.hpp>
+#include <tosshin_cpp/tosshin_cpp.hpp>
+
 #include <termios.h>
-
-#include <string>
-
-#include "./navigation_behavior.hpp"
 
 namespace dienen_behaviors
 {
 
-class TeleopBehavior : public NavigationBehavior
+class TeleopBehavior : public tosshin_cpp::NavigationConsumer
 {
 public:
-  TeleopBehavior(std::string node_name, std::string navigation_node_name);
+  explicit TeleopBehavior(rclcpp::Node::SharedPtr node);
   ~TeleopBehavior();
 
-  void on_update() override;
-
 private:
+  void on_update();
+
+  rclcpp::TimerBase::SharedPtr update_timer;
+
   struct termios original_term;
   struct termios nonblock_term;
 };

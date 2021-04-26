@@ -26,24 +26,30 @@
 
 int main(int argc, char ** argv)
 {
-  if (argc < 2) {
-    std::cout << "Usage: ros2 run dienen_behaviors teleop_behavior " <<
-      "<navigation_node_name>" << std::endl;
+  if (argc < 1) {
+    std::cout << "Usage: ros2 run dienen_behaviors teleop_behavior" << std::endl;
     return 1;
   }
 
-  std::string navigation_node_name = argv[1];
-
   rclcpp::init(argc, argv);
 
-  auto teleop_behavior = std::make_shared<dienen_behaviors::TeleopBehavior>(
-    "teleop_behavior", navigation_node_name);
+  auto node = std::make_shared<rclcpp::Node>("teleop_behavior");
+  auto teleop_behavior = std::make_shared<dienen_behaviors::TeleopBehavior>(node);
 
-  rclcpp::spin(teleop_behavior->get_node());
+  rclcpp::spin(node);
 
-  rclcpp::init(argc, argv);
+  // Stop maneuver before shutting down
+  {
+    if (!rclcpp::ok()) {
+      rclcpp::init(argc, argv);
+    }
 
-  teleop_behavior->stop();
+    try {
+      teleop_behavior->configure_maneuver_to_stop();
+    } catch (std::exception & e) {
+      std::cerr << "Failed to stop the maneuver! " << e.what() << std::endl;
+    }
+  }
 
   rclcpp::shutdown();
 
