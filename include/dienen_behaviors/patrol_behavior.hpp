@@ -22,29 +22,30 @@
 #define DIENEN_BEHAVIORS__PATROL_BEHAVIOR_HPP_
 
 #include <keisan/keisan.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <tosshin_cpp/tosshin_cpp.hpp>
 
-#include <string>
 #include <vector>
-
-#include "./navigation_behavior.hpp"
 
 namespace dienen_behaviors
 {
 
-class PatrolBehavior : public NavigationBehavior
+class PatrolBehavior : public tosshin_cpp::NavigationConsumer
 {
 public:
-  PatrolBehavior(std::string node_name, std::string navigation_node_name);
-
-  void on_update() override;
+  explicit PatrolBehavior(rclcpp::Node::SharedPtr node);
 
   void add_point(const keisan::Point2 & point);
-  void add_point(const double & x, const double & y);
+  void add_point(double x, double y);
 
 private:
+  void on_update();
+
+  rclcpp::TimerBase::SharedPtr update_timer;
+
   std::vector<keisan::Point2> points;
 
-  size_t current_point_index;
+  size_t point_index;
 };
 
 }  // namespace dienen_behaviors

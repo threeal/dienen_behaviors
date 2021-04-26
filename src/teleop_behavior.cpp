@@ -24,17 +24,22 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#include <string>
-#include <iostream>
-
 #define STDIN 0
 
 namespace dienen_behaviors
 {
 
-TeleopBehavior::TeleopBehavior(std::string node_name, std::string navigation_node_name)
-: NavigationBehavior(node_name, navigation_node_name)
+using namespace std::chrono_literals;
+
+TeleopBehavior::TeleopBehavior(rclcpp::Node::SharedPtr node)
+: tosshin_cpp::NavigationConsumer(node)
 {
+  // Initialize the update timer
+  update_timer = get_node()->create_wall_timer(
+    10ms, [this]() {
+      on_update();
+    });
+
   // Configure terminal
   {
     tcgetattr(STDIN, &original_term);
@@ -59,69 +64,69 @@ void TeleopBehavior::on_update()
 {
   // Handle keyboard input
   {
+    auto target_maneuver = get_maneuver();
+
     char input;
 
     // Modify maneuver according to the keyboard input
     while (read(STDIN, &input, 1) > 0) {
       switch (toupper(input)) {
         case 'W':
-          if (target_forward_maneuver < 0.0) {
-            target_forward_maneuver = 0.0;
+          if (target_maneuver.forward < 0.0) {
+            target_maneuver.forward = 0.0;
+            target_maneuver.left = 0.0;
+            target_maneuver.yaw = 0.0;
             break;
           }
 
-          target_forward_maneuver += 10.0;
+          target_maneuver.forward += 10.0;
           break;
 
         case 'S':
-          if (target_forward_maneuver > 0.0) {
-            target_forward_maneuver = 0.0;
+          if (target_maneuver.forward > 0.0) {
+            target_maneuver.forward = 0.0;
+            target_maneuver.left = 0.0;
+            target_maneuver.yaw = 0.0;
             break;
           }
 
-          target_forward_maneuver -= 10.0;
+          target_maneuver.forward -= 10.0;
           break;
 
         case 'A':
-          if (target_left_maneuver < 0.0) {
-            target_left_maneuver = 0.0;
+          if (target_maneuver.left < 0.0) {
+            target_maneuver.left = 0.0;
             break;
           }
 
-          target_left_maneuver += 10.0;
+          target_maneuver.left += 10.0;
           break;
 
         case 'D':
-          if (target_left_maneuver > 0.0) {
-            target_left_maneuver = 0.0;
+          if (target_maneuver.left > 0.0) {
+            target_maneuver.left = 0.0;
             break;
           }
 
-          target_left_maneuver -= 10.0;
+          target_maneuver.left -= 10.0;
           break;
 
         case 'Q':
-          if (target_yaw_maneuver < 0.0) {
-            target_yaw_maneuver = 0.0;
+          if (target_maneuver.yaw < 0.0) {
+            target_maneuver.yaw = 0.0;
             break;
           }
 
-          target_yaw_maneuver += 10.0;
+          target_maneuver.yaw += 10.0;
           break;
 
         case 'E':
-          if (target_yaw_maneuver > 0.0) {
-            target_yaw_maneuver = 0.0;
+          if (target_maneuver.yaw > 0.0) {
+            target_maneuver.yaw = 0.0;
             break;
           }
 
-          target_yaw_maneuver -= 10.0;
-          break;
-
-        case 'R':
-          target_forward_maneuver = 0.0;
-          target_left_maneuver = 0.0;
-          target_yaw_maneuver = 0.0;
+          target_maneuver.yaw -= 10.0;
           break;
 
         default:  // Escape
@@ -130,6 +135,8 @@ void TeleopBehavior::on_update()
           usleep(500 * 1000);
           tcsetattr(STDIN, TCSANOW, &nonblock_term);
       }
+
+      set_maneuver(target_maneuver);
     }
   }
 
@@ -138,21 +145,24 @@ void TeleopBehavior::on_update()
     // Clear screen
     std::cout << "\033[2J\033[2H" << std::endl;
 
-    std::cout << "Position: " << current_position.x << " " << current_position.y << std::endl;
-    std::cout << "Orientation: " << current_yaw_orientation << std::endl;
+    auto odometry = get_odometry();
+
+    std::cout << "Position: " << odometry.position.x << " " << odometry.position.y << std::endl;
+    std::cout << "Orientation: " << odometry.orientation.yaw << std::endl;
 
     std::cout << std::endl;
 
-    std::cout << "Forward: " << target_forward_maneuver << std::endl;
-    std::cout << "Left: " << target_left_maneuver << std::endl;
-    std::cout << "Yaw: " << target_yaw_maneuver << std::endl;
+    auto maneuver = get_maneuver();
+
+    std::cout << "Forward: " << maneuver.forward << std::endl;
+    std::cout << "Left: " << maneuver.left << std::endl;
+    std::cout << "Yaw: " << maneuver.yaw << std::endl;
 
     std::cout << std::endl;
 
     std::cout << "W/S = forward/backward" << std::endl;
     std::cout << "A/D = left/right" << std::endl;
     std::cout << "Q/E = rotate" << std::endl;
-    std::cout << "R = reset" << std::endl;
   }
 }
 
