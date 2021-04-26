@@ -11,7 +11,7 @@ jobs:
       - name: Checking out
         uses: actions/checkout@v2.3.4
       - name: Building and testing
-        uses: ichiro-its/ros2-ci@1.0.0
+        uses: ichiro-its/ros2-ci@v1.0.0
         with:
           ros2-distro: foxy
           external-repos: threeal/tosshin#v0.2.0 ichiro-its/keisan#v0.2.0
