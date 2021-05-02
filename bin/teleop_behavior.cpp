@@ -24,6 +24,10 @@
 #include <memory>
 #include <string>
 
+using namespace std::chrono_literals;
+
+std::shared_ptr<dienen_behaviors::TeleopBehavior> teleop_behavior;
+
 int main(int argc, char ** argv)
 {
   if (argc < 1) {
@@ -34,22 +38,30 @@ int main(int argc, char ** argv)
   rclcpp::init(argc, argv);
 
   auto node = std::make_shared<rclcpp::Node>("teleop_behavior");
-  auto teleop_behavior = std::make_shared<dienen_behaviors::TeleopBehavior>(node);
+
+  teleop_behavior = std::make_shared<dienen_behaviors::TeleopBehavior>(node);
+
+  // Stop maneuver on keyboard interrupt
+  signal(
+    SIGINT, [](int /*code*/) {
+      // Create a timeout handler
+      auto timer = teleop_behavior->get_node()->create_wall_timer(
+        3s, []() {
+          RCLCPP_ERROR(teleop_behavior->get_node()->get_logger(), "Failed to stop the maneuver!");
+          rclcpp::shutdown();
+        });
+
+      RCLCPP_INFO(teleop_behavior->get_node()->get_logger(), "Requesting to stop the maneuver...");
+      teleop_behavior->configure_maneuver(
+        tosshin_cpp::Maneuver(), [timer](const tosshin_cpp::Maneuver & /*maneuver*/) {
+          RCLCPP_INFO(teleop_behavior->get_node()->get_logger(), "Maneuver stopped!");
+
+          timer->cancel();
+          rclcpp::shutdown();
+        });
+    });
 
   rclcpp::spin(node);
-
-  // Stop maneuver before shutting down
-  {
-    if (!rclcpp::ok()) {
-      rclcpp::init(argc, argv);
-    }
-
-    try {
-      teleop_behavior->configure_maneuver_to_stop();
-    } catch (std::exception & e) {
-      std::cerr << "Failed to stop the maneuver! " << e.what() << std::endl;
-    }
-  }
 
   rclcpp::shutdown();
 

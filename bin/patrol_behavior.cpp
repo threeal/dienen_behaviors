@@ -24,6 +24,10 @@
 #include <memory>
 #include <string>
 
+using namespace std::chrono_literals;
+
+std::shared_ptr<dienen_behaviors::PatrolBehavior> patrol_behavior;
+
 int main(int argc, char ** argv)
 {
   if (argc < 3) {
@@ -35,26 +39,34 @@ int main(int argc, char ** argv)
   rclcpp::init(argc, argv);
 
   auto node = std::make_shared<rclcpp::Node>("patrol_behavior");
-  auto patrol_behavior = std::make_shared<dienen_behaviors::PatrolBehavior>(node);
+
+  patrol_behavior = std::make_shared<dienen_behaviors::PatrolBehavior>(node);
 
   for (int i = 2; i < argc; i += 2) {
     patrol_behavior->add_point(atof(argv[i - 1]), atof(argv[i]));
   }
 
+  // Stop maneuver on keyboard interrupt
+  signal(
+    SIGINT, [](int /*code*/) {
+      // Create a timeout handler
+      auto timer = patrol_behavior->get_node()->create_wall_timer(
+        3s, []() {
+          RCLCPP_ERROR(patrol_behavior->get_node()->get_logger(), "Failed to stop the maneuver!");
+          rclcpp::shutdown();
+        });
+
+      RCLCPP_INFO(patrol_behavior->get_node()->get_logger(), "Requesting to stop the maneuver...");
+      patrol_behavior->configure_maneuver(
+        tosshin_cpp::Maneuver(), [timer](const tosshin_cpp::Maneuver & /*maneuver*/) {
+          RCLCPP_INFO(patrol_behavior->get_node()->get_logger(), "Maneuver stopped!");
+
+          timer->cancel();
+          rclcpp::shutdown();
+        });
+    });
+
   rclcpp::spin(node);
-
-  // Stop before shutting down
-  {
-    if (!rclcpp::ok()) {
-      rclcpp::init(argc, argv);
-    }
-
-    try {
-      patrol_behavior->configure_maneuver_to_stop();
-    } catch (std::exception & e) {
-      std::cerr << "Failed to stop the maneuver! " << e.what() << std::endl;
-    }
-  }
 
   rclcpp::shutdown();
 
