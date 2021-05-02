@@ -60,7 +60,7 @@ void PatrolBehavior::on_update()
 
   auto odometry = get_odometry();
 
-  auto current_point = tosshin_cpp::position_to_point(odometry.position);
+  auto current_point = keisan::Point2(odometry.position.x, odometry.position.y);
   auto target_point = points[point_index];
 
   // Shift target point if near

@@ -14,4 +14,4 @@ jobs:
         uses: ichiro-its/ros2-ci@v1.0.0
         with:
           ros2-distro: foxy
-          external-repos: threeal/tosshin#v0.2.0 ichiro-its/keisan#v0.2.0
+          external-repos: threeal/tosshin ichiro-its/keisan#v0.2.0
