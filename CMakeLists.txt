@@ -16,8 +16,11 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(keisan REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(tosshin_cpp REQUIRED)
+
+install(DIRECTORY "include" DESTINATION ".")
 
 add_library(${PROJECT_NAME}
   "src/patrol_behavior.cpp"
@@ -28,9 +31,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   $<INSTALL_INTERFACE:include>)
 
 ament_target_dependencies(${PROJECT_NAME}
-  keisan rclcpp tosshin_cpp)
-
-install(DIRECTORY "include" DESTINATION ".")
+  keisan nav_msgs rclcpp tosshin_cpp)
 
 install(TARGETS ${PROJECT_NAME}
   EXPORT export_${PROJECT_NAME}
@@ -38,31 +39,23 @@ install(TARGETS ${PROJECT_NAME}
   LIBRARY DESTINATION "lib"
   RUNTIME DESTINATION "bin")
 
+add_executable(odometry_bridge "bin/odometry_bridge.cpp")
 add_executable(patrol_behavior "bin/patrol_behavior.cpp")
-
-target_include_directories(patrol_behavior PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
-
-target_link_libraries(patrol_behavior ${PROJECT_NAME})
-
 add_executable(teleop_behavior "bin/teleop_behavior.cpp")
 
-target_include_directories(teleop_behavior PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
+foreach(target odometry_bridge patrol_behavior teleop_behavior)
+  target_link_libraries(${target} ${PROJECT_NAME})
 
-target_link_libraries(teleop_behavior ${PROJECT_NAME})
-
-install(TARGETS patrol_behavior teleop_behavior
-  DESTINATION "lib/${PROJECT_NAME}")
+  install(TARGETS ${target}
+    DESTINATION "lib/${PROJECT_NAME}")
+endforeach()
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_export_dependencies(rclcpp tosshin_cpp)
+ament_export_dependencies(keisan nav_msgs rclcpp tosshin_cpp)
 ament_export_include_directories("include")
 ament_export_libraries(${PROJECT_NAME})
 
