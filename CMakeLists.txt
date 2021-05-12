@@ -41,11 +41,11 @@ install(TARGETS ${PROJECT_NAME}
   LIBRARY DESTINATION "lib"
   RUNTIME DESTINATION "bin")
 
-add_executable(odometry_bridge "bin/odometry_bridge.cpp")
 add_executable(patrol_behavior "bin/patrol_behavior.cpp")
+add_executable(slam_bridge "bin/slam_bridge.cpp")
 add_executable(teleop_behavior "bin/teleop_behavior.cpp")
 
-foreach(target odometry_bridge patrol_behavior teleop_behavior)
+foreach(target patrol_behavior slam_bridge teleop_behavior)
   target_link_libraries(${target} ${PROJECT_NAME})
 
   install(TARGETS ${target}
