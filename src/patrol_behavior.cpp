@@ -65,7 +65,7 @@ void PatrolBehavior::on_update()
 
   // Shift target point if near
   auto distance = keisan::Point2::distance_between(current_point, target_point);
-  if (distance <= 0.1) {
+  if (distance <= 0.3) {
     point_index = (point_index + 1) % points.size();
     target_point = points[point_index];
   }
@@ -75,7 +75,7 @@ void PatrolBehavior::on_update()
     double direction = (target_point - current_point).direction();
     double yaw = keisan::delta_deg(odometry.orientation.yaw, keisan::rad_to_deg(direction));
 
-    target_maneuver.yaw = keisan::clamp_number(yaw, -40.0, 40.0);
+    target_maneuver.yaw = keisan::clamp_number(yaw * 2.0, -100.0, 100.0);
   }
 
   // Calculate a new target forward maneuver
