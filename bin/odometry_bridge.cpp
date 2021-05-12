@@ -30,7 +30,7 @@ int main(int argc, char ** argv)
 
   auto node = std::make_shared<rclcpp::Node>("odometry_bridge");
 
-  auto odometry_publisher = node->create_publisher<nav_msgs::msg::Odometry>("/odometry", 10);
+  auto odometry_publisher = node->create_publisher<nav_msgs::msg::Odometry>("/odom", 10);
 
   RCLCPP_INFO_STREAM(
     node->get_logger(),
