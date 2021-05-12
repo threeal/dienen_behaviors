@@ -23,8 +23,28 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    parameters = [{
+        'frame_id': 'base_footprint',
+        'use_sim_time': True,
+        'subscribe_depth': True}]
+
     return LaunchDescription([
-        Node(package='dienen_behaviors', node_executable='odometry_bridge', output='screen'),
-        Node(package='rtabmap_ros', node_executable='rtabmap', output='screen', arguments=['-d']),
-        Node(package='rtabmap_ros', node_executable='rtabmapviz', output='screen'),
+        Node(
+            package='dienen_behaviors',
+            node_executable='odometry_bridge',
+            output='screen'
+        ),
+        Node(
+            package='rtabmap_ros',
+            node_executable='rtabmap',
+            output='screen',
+            arguments=['-d'],
+            parameters=parameters
+        ),
+        Node(
+            package='rtabmap_ros',
+            node_executable='rtabmapviz',
+            output='screen',
+            parameters=parameters
+        ),
     ])

@@ -18,9 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#include <geometry_msgs/msg/transform_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
-#include <tosshin_cpp/tosshin_cpp.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <tf2_msgs/msg/tf_message.hpp>
+#include <tosshin_cpp/tosshin_cpp.hpp>
 
 #include <memory>
 
@@ -30,21 +32,27 @@ int main(int argc, char ** argv)
 
   auto node = std::make_shared<rclcpp::Node>("odometry_bridge");
 
-  auto odometry_publisher = node->create_publisher<nav_msgs::msg::Odometry>("/odom", 10);
+  auto odom_publisher = node->create_publisher<nav_msgs::msg::Odometry>("/odom", 10);
+  auto tf_publisher = node->create_publisher<tf2_msgs::msg::TFMessage>("/tf", 10);
 
-  RCLCPP_INFO_STREAM(
-    node->get_logger(),
-    "Odometry publisher initialized on `" << odometry_publisher->get_topic_name() << "`!");
-
+  auto start_time = node->get_clock()->now();
   auto odometry_consumer = std::make_shared<tosshin_cpp::OdometryConsumer>(node);
   odometry_consumer->set_on_change_odometry(
     [&](const tosshin_cpp::Odometry & odometry) {
-      nav_msgs::msg::Odometry msg;
+      geometry_msgs::msg::TransformStamped transform_stamped;
 
-      msg.pose.pose.position.x = odometry.position.x;
-      msg.pose.pose.position.y = odometry.position.y;
+      auto elapsed_time = node->get_clock()->now() - start_time;
 
-      // Convert from equler angles to quaternion
+      transform_stamped.header.frame_id = "odom";
+      transform_stamped.header.stamp.sec = elapsed_time.seconds();
+      transform_stamped.header.stamp.nanosec = elapsed_time.nanoseconds();
+
+      transform_stamped.child_frame_id = "base_footprint";
+
+      transform_stamped.transform.translation.x = odometry.position.x;
+      transform_stamped.transform.translation.y = odometry.position.y;
+
+      // Convert orientation from equler angles to quaternion
       {
         double cy = cos(odometry.orientation.yaw * 0.5);
         double sy = sin(odometry.orientation.yaw * 0.5);
@@ -53,13 +61,34 @@ int main(int argc, char ** argv)
         double cr = cos(0.0);
         double sr = sin(0.0);
 
-        msg.pose.pose.orientation.x = sr * cp * cy - cr * sp * sy;
-        msg.pose.pose.orientation.y = cr * sp * cy + sr * cp * sy;
-        msg.pose.pose.orientation.z = cr * cp * sy - sr * sp * cy;
-        msg.pose.pose.orientation.w = cr * cp * cy + sr * sp * sy;
+        transform_stamped.transform.rotation.x = sr * cp * cy - cr * sp * sy;
+        transform_stamped.transform.rotation.y = cr * sp * cy + sr * cp * sy;
+        transform_stamped.transform.rotation.z = cr * cp * sy - sr * sp * cy;
+        transform_stamped.transform.rotation.w = cr * cp * cy + sr * sp * sy;
       }
 
-      odometry_publisher->publish(msg);
+      // Publish odom message
+      {
+        nav_msgs::msg::Odometry odom_msg;
+
+        odom_msg.header = transform_stamped.header;
+        odom_msg.child_frame_id = transform_stamped.child_frame_id;
+        odom_msg.pose.pose.orientation = transform_stamped.transform.rotation;
+
+        odom_msg.pose.pose.position.x = transform_stamped.transform.translation.x;
+        odom_msg.pose.pose.position.y = transform_stamped.transform.translation.y;
+        odom_msg.pose.pose.position.z = transform_stamped.transform.translation.z;
+
+        odom_publisher->publish(odom_msg);
+      }
+
+      // Publish TF message
+      {
+        tf2_msgs::msg::TFMessage tf_msg;
+        tf_msg.transforms.push_back(transform_stamped);
+
+        tf_publisher->publish(tf_msg);
+      }
     });
 
   rclcpp::spin(node);
