@@ -19,8 +19,10 @@
 // THE SOFTWARE.
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
+#include <keisan/keisan.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
 #include <tf2_msgs/msg/tf_message.hpp>
 #include <tosshin_cpp/tosshin_cpp.hpp>
 
@@ -32,20 +34,20 @@ int main(int argc, char ** argv)
 
   auto node = std::make_shared<rclcpp::Node>("slam_bridge");
 
+  auto odometry_consumer = std::make_shared<tosshin_cpp::OdometryConsumer>(node);
+
   auto odom_publisher = node->create_publisher<nav_msgs::msg::Odometry>("/odom", 10);
   auto tf_publisher = node->create_publisher<tf2_msgs::msg::TFMessage>("/tf", 10);
 
-  auto start_time = node->get_clock()->now();
-  auto odometry_consumer = std::make_shared<tosshin_cpp::OdometryConsumer>(node);
-  odometry_consumer->set_on_change_odometry(
-    [&](const tosshin_cpp::Odometry & odometry) {
+  auto camera_info_subscription = node->create_subscription<sensor_msgs::msg::CameraInfo>(
+    "/rgb/camera_info", 10,
+    [&](const sensor_msgs::msg::CameraInfo::SharedPtr msg) {
+      auto odometry = odometry_consumer->get_odometry();
+
       geometry_msgs::msg::TransformStamped odom_tf;
 
-      auto elapsed_time = node->get_clock()->now() - start_time;
-
       odom_tf.header.frame_id = "odom";
-      odom_tf.header.stamp.sec = elapsed_time.seconds();
-      odom_tf.header.stamp.nanosec = elapsed_time.nanoseconds();
+      odom_tf.header.stamp = msg->header.stamp;
 
       odom_tf.child_frame_id = "base_footprint";
 
@@ -54,8 +56,8 @@ int main(int argc, char ** argv)
 
       // Convert orientation from equler angles to quaternion
       {
-        double cy = cos(odometry.orientation.yaw * 0.5);
-        double sy = sin(odometry.orientation.yaw * 0.5);
+        double cy = cos(keisan::deg_to_rad(odometry.orientation.yaw) * 0.5);
+        double sy = sin(keisan::deg_to_rad(odometry.orientation.yaw) * 0.5);
         double cp = cos(0.0);
         double sp = sin(0.0);
         double cr = cos(0.0);
@@ -92,9 +94,9 @@ int main(int argc, char ** argv)
         // Push camera transform
         {
           geometry_msgs::msg::TransformStamped camera_tf;
-
           camera_tf.header = odom_tf.header;
-          camera_tf.child_frame_id = "camera_link";
+          camera_tf.header.frame_id = odom_tf.child_frame_id;
+          camera_tf.child_frame_id = msg->header.frame_id;
 
           tf_msg.transforms.push_back(camera_tf);
         }

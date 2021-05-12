@@ -19,6 +19,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(keisan REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(tf2_msgs REQUIRED)
 find_package(tosshin_cpp REQUIRED)
 
@@ -33,7 +34,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   $<INSTALL_INTERFACE:include>)
 
 ament_target_dependencies(${PROJECT_NAME}
-  geometry_msgs keisan nav_msgs rclcpp tf2_msgs tosshin_cpp)
+  geometry_msgs keisan nav_msgs rclcpp sensor_msgs tf2_msgs tosshin_cpp)
 
 install(TARGETS ${PROJECT_NAME}
   EXPORT export_${PROJECT_NAME}
@@ -60,7 +61,9 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_export_dependencies(geometry_msgs keisan nav_msgs rclcpp tf2_msgs tosshin_cpp)
+ament_export_dependencies(
+  geometry_msgs keisan nav_msgs rclcpp sensor_msgs tf2_msgs tosshin_cpp)
+
 ament_export_include_directories("include")
 ament_export_libraries(${PROJECT_NAME})
 

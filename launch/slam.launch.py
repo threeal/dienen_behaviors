@@ -31,7 +31,7 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='dienen_behaviors',
-            node_executable='odometry_bridge',
+            node_executable='slam_bridge',
             output='screen'
         ),
         Node(
