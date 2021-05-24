@@ -36,7 +36,9 @@ public:
   explicit PatrolBehavior(rclcpp::Node::SharedPtr node);
 
   void add_point(const keisan::Point2 & point);
-  void add_point(double x, double y);
+  void add_point(const double & x, const double & y);
+
+  void enable_repeat(const bool & enabled);
 
 private:
   void on_update();
@@ -44,8 +46,10 @@ private:
   rclcpp::TimerBase::SharedPtr update_timer;
 
   std::vector<keisan::Point2> points;
-
   size_t point_index;
+
+  bool repeat;
+  bool finished;
 };
 
 }  // namespace dienen_behaviors
