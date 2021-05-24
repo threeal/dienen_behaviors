@@ -29,12 +29,12 @@ add_library(${PROJECT_NAME}
   "src/patrol_behavior.cpp"
   "src/teleop_behavior.cpp")
 
+ament_target_dependencies(${PROJECT_NAME}
+  geometry_msgs keisan nav_msgs rclcpp sensor_msgs tf2_msgs tosshin_cpp)
+
 target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
-
-ament_target_dependencies(${PROJECT_NAME}
-  geometry_msgs keisan nav_msgs rclcpp sensor_msgs tf2_msgs tosshin_cpp)
 
 install(TARGETS ${PROJECT_NAME}
   EXPORT export_${PROJECT_NAME}
@@ -42,14 +42,18 @@ install(TARGETS ${PROJECT_NAME}
   LIBRARY DESTINATION "lib"
   RUNTIME DESTINATION "bin")
 
-add_executable(patrol_behavior "bin/patrol_behavior.cpp")
-add_executable(slam_bridge "bin/slam_bridge.cpp")
-add_executable(teleop_behavior "bin/teleop_behavior.cpp")
+set(EXECUTABLES
+  "bin/patrol_behavior.cpp"
+  "bin/slam_bridge.cpp"
+  "bin/teleop_behavior.cpp")
 
-foreach(target patrol_behavior slam_bridge teleop_behavior)
-  target_link_libraries(${target} ${PROJECT_NAME})
+foreach(EXECUTABLE ${EXECUTABLES})
+  get_filename_component(TARGET ${EXECUTABLE} NAME_WE)
 
-  install(TARGETS ${target}
+  add_executable(${TARGET} ${EXECUTABLE})
+  target_link_libraries(${TARGET} ${PROJECT_NAME})
+
+  install(TARGETS ${TARGET}
     DESTINATION "lib/${PROJECT_NAME}")
 endforeach()
 
