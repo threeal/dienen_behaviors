@@ -1,8 +1,8 @@
 name: Deploy Debian Nightly
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [ main ]
+  push:
+    branches: [main]
 jobs:
   deploy-debian-nightly:
     runs-on: ubuntu-latest
@@ -11,3 +11,37 @@ jobs:
         uses: actions/checkout@v2.3.4
         with:
           path: dienen_behaviors
+
+      - name: Add nightly Debian repository and rosdep sources list
+        run: |
+          sudo apt update && sudo apt install curl
+          curl -s http://repository.ichiro-its.org/debian/setup-nightly.bash | bash -s
+          curl -s http://repository.ichiro-its.org/rosdep/setup.bash | bash -s
+
+      - name: Build nightly Debian package
+        uses: ichiro-its/ros2-build-debian-action@main
+        with:
+          unique-version: true
+
+      - name: Deploy nightly Debian package to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASS }}
+          source: "package/*.deb"
+          target: "~/temp/nightly/dienen_behaviors/"
+          rm: true
+
+      - name: Prepare nightly Debian package in the server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASS }}
+          script: |
+            cd ~/repository/debian
+            reprepro includedeb nightly ~/temp/nightly/dienen_behaviors/package/*.deb
+            rm -rf ~/temp/nightly/dienen_behaviors/
