@@ -1,9 +1,10 @@
 # Dienen Behaviors
 
 [![latest version](https://img.shields.io/github/v/release/threeal/dienen_behaviors)](https://github.com/threeal/dienen_behaviors/releases/)
-[![milestone](https://img.shields.io/github/milestones/progress/threeal/dienen_behaviors/1?label=milestone)](https://github.com/threeal/dienen_behaviors/milestone/1)
+[![commits since latest version](https://img.shields.io/github/commits-since/threeal/dienen_behaviors/latest)](https://github.com/threeal/dienen_behaviors/commits/master)
 [![license](https://img.shields.io/github/license/threeal/dienen_behaviors)](./LICENSE)
-[![test status](https://img.shields.io/github/workflow/status/threeal/dienen_behaviors/Build%20and%20Test?label=test)](https://github.com/threeal/dienen_behaviors/actions)
+[![stable test status](https://img.shields.io/github/workflow/status/threeal/dienen_behaviors/Build%20and%20Test%20Stable?label=stable%20test)](https://github.com/threeal/dienen_behaviors/actions)
+[![nightly test status](https://img.shields.io/github/workflow/status/threeal/dienen_behaviors/Build%20and%20Test%20Nightly?label=nighly%20test)](https://github.com/threeal/dienen_behaviors/actions)
 
 This package provides behavior programs of the [Dienen](https://github.com/threeal/proposal-ta-simulasi-robot) assistive robot.
 

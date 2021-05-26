@@ -29,7 +29,9 @@ using namespace std::chrono_literals;
 
 PatrolBehavior::PatrolBehavior(rclcpp::Node::SharedPtr node)
 : tosshin_cpp::NavigationConsumer(node),
-  point_index(0)
+  point_index(0),
+  repeat(false),
+  finished(false)
 {
   // Initialize the update timer
   update_timer = get_node()->create_wall_timer(
@@ -46,6 +48,11 @@ void PatrolBehavior::on_update()
   target_maneuver.forward = 0.0;
   target_maneuver.left = 0.0;
   target_maneuver.yaw = 0.0;
+
+  // Stop if finished
+  if (finished) {
+    return set_maneuver(target_maneuver);
+  }
 
   if (points.size() < 1) {
     RCLCPP_WARN_ONCE(get_node()->get_logger(), "Once, no point provided!");
@@ -66,7 +73,16 @@ void PatrolBehavior::on_update()
   // Shift target point if near
   auto distance = keisan::Point2::distance_between(current_point, target_point);
   if (distance <= 0.3) {
-    point_index = (point_index + 1) % points.size();
+    if (repeat) {
+      point_index = (point_index + 1) % points.size();
+    } else if (point_index + 1 >= points.size()) {
+      // All target points is reached
+      point_index = 0;
+      finished = true;
+
+      RCLCPP_INFO(get_node()->get_logger(), "Finished!");
+    }
+
     target_point = points[point_index];
   }
 
@@ -90,9 +106,23 @@ void PatrolBehavior::add_point(const keisan::Point2 & point)
   points.push_back(point);
 }
 
-void PatrolBehavior::add_point(double x, double y)
+void PatrolBehavior::add_point(const double & x, const double & y)
 {
   add_point(keisan::Point2(x, y));
+}
+
+void PatrolBehavior::enable_repeat(const bool & enabled)
+{
+  repeat = enabled;
+
+  // finished state is invalid when repeat is enabled
+  if (repeat) {
+    finished = false;
+  }
+
+  RCLCPP_INFO_STREAM(
+    get_node()->get_logger(),
+    "Repeat is " << (repeat ? "enabled" : "disabled") << "!");
 }
 
 }  // namespace dienen_behaviors

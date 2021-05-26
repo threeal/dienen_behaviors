@@ -7,7 +7,7 @@ if(NOT CMAKE_C_STANDARD)
 endif()
 
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -15,6 +15,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(argparse REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(keisan REQUIRED)
 find_package(nav_msgs REQUIRED)
@@ -30,7 +31,7 @@ add_library(${PROJECT_NAME}
   "src/teleop_behavior.cpp")
 
 ament_target_dependencies(${PROJECT_NAME}
-  geometry_msgs keisan nav_msgs rclcpp sensor_msgs tf2_msgs tosshin_cpp)
+  argparse geometry_msgs keisan nav_msgs rclcpp sensor_msgs tf2_msgs tosshin_cpp)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -66,7 +67,7 @@ if(BUILD_TESTING)
 endif()
 
 ament_export_dependencies(
-  geometry_msgs keisan nav_msgs rclcpp sensor_msgs tf2_msgs tosshin_cpp)
+  argparse geometry_msgs keisan nav_msgs rclcpp sensor_msgs tf2_msgs tosshin_cpp)
 
 ament_export_include_directories("include")
 ament_export_libraries(${PROJECT_NAME})
