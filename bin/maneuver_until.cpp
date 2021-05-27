@@ -73,7 +73,15 @@ int main(int argc, char ** argv)
   update_timer = node->create_wall_timer(
     10ms, [&]() {
       auto duration = node->now() - start_time;
-      if (duration.seconds() >= program.get<double>("duration")) {
+      if (duration.seconds() < program.get<double>("duration")) {
+        auto maneuver = maneuver_consumer->get_maneuver();
+
+        maneuver.forward = program.get<double>("--forward");
+        maneuver.left = program.get<double>("--left");
+        maneuver.yaw = program.get<double>("--yaw");
+
+        maneuver_consumer->set_maneuver(maneuver);
+      } else {
         RCLCPP_INFO(node->get_logger(), "Finished!");
 
         // Set maneuver into stop
@@ -99,14 +107,6 @@ int main(int argc, char ** argv)
             stop_timeout_timer->cancel();
             rclcpp::shutdown();
           });
-      } else {
-        auto maneuver = maneuver_consumer->get_maneuver();
-
-        maneuver.forward = program.get<double>("--forward");
-        maneuver.left = program.get<double>("--left");
-        maneuver.yaw = program.get<double>("--yaw");
-
-        maneuver_consumer->set_maneuver(maneuver);
       }
     });
 
