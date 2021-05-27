@@ -29,7 +29,7 @@ using namespace std::chrono_literals;
 
 int main(int argc, char ** argv)
 {
-  auto program = argparse::ArgumentParser("move_for", "0.1.0");
+  auto program = argparse::ArgumentParser("move_for", "0.2.0");
 
   program.add_argument("duration")
   .help("Duration until finished in seconds")
