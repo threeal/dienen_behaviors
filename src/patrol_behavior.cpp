@@ -73,14 +73,14 @@ void PatrolBehavior::on_update()
   // Shift target point if near
   auto distance = keisan::Point2::distance_between(current_point, target_point);
   if (distance <= 0.3) {
-    if (repeat) {
-      point_index = (point_index + 1) % points.size();
-    } else if (point_index + 1 >= points.size()) {
+    if (!repeat && point_index + 1 >= points.size()) {
       // All target points is reached
       point_index = 0;
       finished = true;
 
       RCLCPP_INFO(get_node()->get_logger(), "Finished!");
+    } else {
+      point_index = (point_index + 1) % points.size();
     }
 
     target_point = points[point_index];
@@ -91,11 +91,11 @@ void PatrolBehavior::on_update()
     double direction = (target_point - current_point).direction();
     double yaw = keisan::delta_deg(odometry.orientation.yaw, keisan::rad_to_deg(direction));
 
-    target_maneuver.yaw = keisan::clamp_number(yaw * 2.0, -100.0, 100.0);
+    target_maneuver.yaw = keisan::clamp_number(yaw, -100.0, 100.0);
   }
 
   // Calculate a new target forward maneuver
-  double forward = keisan::map_number(std::abs(target_maneuver.yaw), 0.0, 15.0, 60.0, 0.0);
+  double forward = keisan::map_number(std::abs(target_maneuver.yaw), 0.0, 60.0, 60.0, 0.0);
   target_maneuver.forward = std::max(forward, 0.0);
 
   set_maneuver(target_maneuver);
