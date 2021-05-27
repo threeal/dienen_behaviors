@@ -27,8 +27,7 @@ find_package(tosshin_cpp REQUIRED)
 install(DIRECTORY "include" DESTINATION ".")
 
 add_library(${PROJECT_NAME}
-  "src/patrol_behavior.cpp"
-  "src/teleop_behavior.cpp")
+  "src/patrol_behavior.cpp")
 
 ament_target_dependencies(${PROJECT_NAME}
   argparse geometry_msgs keisan nav_msgs rclcpp sensor_msgs tf2_msgs tosshin_cpp)
@@ -44,9 +43,9 @@ install(TARGETS ${PROJECT_NAME}
   RUNTIME DESTINATION "bin")
 
 set(EXECUTABLES
+  "bin/move_for.cpp"
   "bin/patrol_behavior.cpp"
-  "bin/slam_bridge.cpp"
-  "bin/teleop_behavior.cpp")
+  "bin/slam_bridge.cpp")
 
 foreach(EXECUTABLE ${EXECUTABLES})
   get_filename_component(TARGET ${EXECUTABLE} NAME_WE)
