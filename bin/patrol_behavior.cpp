@@ -34,7 +34,7 @@ int main(int argc, char ** argv)
 {
   auto program = argparse::ArgumentParser("patrol_behavior", "0.1.0");
 
-  program.add_argument("--repeat")
+  program.add_argument("-r", "--repeat")
   .help("repeat patrol process")
   .default_value(false)
   .implicit_value(true);
