@@ -44,6 +44,7 @@ install(TARGETS ${PROJECT_NAME}
   RUNTIME DESTINATION "bin")
 
 set(EXECUTABLES
+  "bin/maneuver_until.cpp"
   "bin/patrol_behavior.cpp"
   "bin/slam_bridge.cpp"
   "bin/teleop_behavior.cpp")
