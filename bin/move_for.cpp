@@ -61,7 +61,7 @@ int main(int argc, char ** argv)
 
   rclcpp::init(argc, argv);
 
-  auto node = std::make_shared<rclcpp::Node>("maneuver_until");
+  auto node = std::make_shared<rclcpp::Node>("move_for");
 
   auto maneuver_consumer = std::make_shared<tosshin_cpp::ManeuverConsumer>(node);
 
