@@ -69,6 +69,14 @@ int main(int argc, char ** argv)
 
   rclcpp::TimerBase::SharedPtr update_timer;
 
+  RCLCPP_INFO_STREAM(
+    node->get_logger(),
+    "\n" <<
+      "Move for " << program.get<double>("duration") << " seconds with maneuver:\n" <<
+      "- forward : " << program.get<double>("--forward") << " m/min\n" <<
+      "- left\t  : " << program.get<double>("--left") << " m/min\n" <<
+      "- yaw\t  : " << program.get<double>("--yaw") << " rad/min");
+
   // Update process
   update_timer = node->create_wall_timer(
     10ms, [&]() {
