@@ -19,42 +19,65 @@
 // THE SOFTWARE.
 
 #include <argparse/argparse.hpp>
+#include <geometry_msgs/msg/twist.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <tosshin_cpp/tosshin_cpp.hpp>
+#include <rosgraph_msgs/msg/clock.hpp>
 
 #include <memory>
 #include <string>
 
 using namespace std::chrono_literals;
 
+using geometry_msgs::msg::Twist;
+using rosgraph_msgs::msg::Clock;
+
 int main(int argc, char ** argv)
 {
   auto program = argparse::ArgumentParser("move_for", "0.2.0");
 
-  program.add_argument("duration")
-  .help("Duration until finished in seconds")
+  program.add_argument("-d", "--duration")
+  .help("duration until finished in seconds, move forever on negative duration")
+  .default_value(-1.0)
   .action([](const std::string & value) {return std::stod(value);});
 
-  program.add_argument("-f", "--forward")
-  .help("Set forward maneuver in meter per minute")
-  .action([](const std::string & value) {return std::stod(value);})
-  .default_value(0.0);
+  program.add_argument("-l", "--linear")
+  .help("set linear speed (x, y, z) in meter per second")
+  .nargs(3)
+  .default_value(std::vector<double>{0.0, 0.0, 0.0})
+  .action([](const std::string & value) {return std::stod(value);});
 
-  program.add_argument("-l", "--left")
-  .help("Set left maneuver in meter per minute")
-  .action([](const std::string & value) {return std::stod(value);})
-  .default_value(0.0);
+  program.add_argument("-a", "--angular")
+  .help("set angular speed (x, y, z) in radian per second")
+  .nargs(3)
+  .default_value(std::vector<double>{0.0, 0.0, 0.0})
+  .action([](const std::string & value) {return std::stod(value);});
 
-  program.add_argument("-y", "--yaw")
-  .help("Set yaw maneuver in radian per minute")
-  .action([](const std::string & value) {return std::stod(value);})
-  .default_value(0.0);
+  program.add_argument("--use-sim-time")
+  .help("use simulation time to measures duration")
+  .default_value(false)
+  .implicit_value(true);
+
+  double target_duration;
+  bool move_forever;
+
+  bool use_sim_time;
+
+  std::vector<double> linear;
+  std::vector<double> angular;
 
   // Try to parse arguments
   try {
     program.parse_args(argc, argv);
-  } catch (const std::runtime_error & err) {
-    std::cout << err.what() << std::endl;
+
+    target_duration = program.get<double>("--duration");
+    move_forever = (target_duration < 0.0);
+
+    use_sim_time = program.get<bool>("--use-sim-time");
+
+    linear = program.get<std::vector<double>>("--linear");
+    angular = program.get<std::vector<double>>("--angular");
+  } catch (const std::exception & e) {
+    std::cout << e.what() << std::endl;
     std::cout << program;
     return 1;
   }
@@ -63,62 +86,73 @@ int main(int argc, char ** argv)
 
   auto node = std::make_shared<rclcpp::Node>("move_for");
 
-  auto maneuver_consumer = std::make_shared<tosshin_cpp::ManeuverConsumer>(node);
+  auto twist_publisher = node->create_publisher<Twist>("/cmd_vel", 10);
 
-  auto start_time = node->now();
+  // Print arguments information
+  {
+    if (move_forever) {
+      RCLCPP_INFO(node->get_logger(), "Move forever");
+    } else {
+      RCLCPP_INFO_STREAM(node->get_logger(), "Move for " << target_duration << " seconds");
+    }
 
-  rclcpp::TimerBase::SharedPtr update_timer;
+    RCLCPP_INFO_STREAM(
+      node->get_logger(),
+      "linear speed\t: " << linear[0] << " " << linear[1] << " " << linear[2] << " m/s");
 
-  RCLCPP_INFO_STREAM(
-    node->get_logger(),
-    "\n" <<
-      "Move for " << program.get<double>("duration") << " seconds with maneuver:\n" <<
-      "- forward : " << program.get<double>("--forward") << " m/min\n" <<
-      "- left\t  : " << program.get<double>("--left") << " m/min\n" <<
-      "- yaw\t  : " << program.get<double>("--yaw") << " rad/min");
+    RCLCPP_INFO_STREAM(
+      node->get_logger(),
+      "angular speed\t: " << angular[0] << " " << angular[1] << " " << angular[2] << " rad/s");
+  }
+
+  auto update_process = [&](rclcpp::Duration duration) {
+    if (move_forever || duration.seconds() < target_duration) {
+      Twist twist;
+
+      twist.linear.x = linear[0];
+      twist.linear.y = linear[1];
+      twist.linear.z = linear[2];
+
+      twist.angular.x = angular[0];
+      twist.angular.y = angular[1];
+      twist.angular.z = angular[2];
+
+      twist_publisher->publish(twist);
+    } else {
+      RCLCPP_INFO(node->get_logger(), "Finished!");
+
+      // Set movement into stop
+      twist_publisher->publish(Twist());
+
+      rclcpp::shutdown();
+    }
+  };
 
   // Update process
-  update_timer = node->create_wall_timer(
-    10ms, [&]() {
-      auto duration = node->now() - start_time;
-      if (duration.seconds() < program.get<double>("duration")) {
-        auto maneuver = maneuver_consumer->get_maneuver();
+  if (use_sim_time) {
+    std::optional<rclcpp::Time> start_time;
+    auto clock_subscription = node->create_subscription<Clock>(
+      "/clock", 10,
+      [&](const Clock::SharedPtr msg) {
+        auto now = rclcpp::Time(msg->clock.sec, msg->clock.nanosec);
 
-        maneuver.forward = program.get<double>("--forward");
-        maneuver.left = program.get<double>("--left");
-        maneuver.yaw = program.get<double>("--yaw");
+        if (!start_time) {
+          start_time = std::make_optional(now);
+        }
 
-        maneuver_consumer->set_maneuver(maneuver);
-      } else {
-        RCLCPP_INFO(node->get_logger(), "Finished!");
+        update_process(now - start_time.value());
+      });
 
-        // Set maneuver into stop
-        maneuver_consumer->set_maneuver(tosshin_cpp::Maneuver());
+    rclcpp::spin(node);
+  } else {
+    auto start_time = node->now();
+    auto update_timer = node->create_wall_timer(
+      10ms, [&]() {
+        update_process(node->now() - start_time);
+      });
 
-        // Stop update timer
-        update_timer->cancel();
-
-        // Create a timeout handler
-        auto stop_timeout_timer = node->create_wall_timer(
-          3s, [ = ]() {
-            RCLCPP_ERROR(node->get_logger(), "Failed to stop the maneuver!");
-            rclcpp::shutdown();
-          });
-
-        // Request to stop the maneuver
-        RCLCPP_INFO(node->get_logger(), "Requesting to stop the maneuver...");
-        maneuver_consumer->configure_maneuver(
-          tosshin_cpp::Maneuver(),
-          [ = ](const tosshin_cpp::Maneuver & /*maneuver*/) {
-            RCLCPP_INFO(node->get_logger(), "Maneuver stopped!");
-
-            stop_timeout_timer->cancel();
-            rclcpp::shutdown();
-          });
-      }
-    });
-
-  rclcpp::spin(node);
+    rclcpp::spin(node);
+  }
 
   rclcpp::shutdown();
 
