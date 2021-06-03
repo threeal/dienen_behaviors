@@ -21,6 +21,7 @@
 #include <argparse/argparse.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <rosgraph_msgs/msg/clock.hpp>
 
 #include <memory>
 #include <string>
@@ -28,30 +29,38 @@
 using namespace std::chrono_literals;
 
 using geometry_msgs::msg::Twist;
+using rosgraph_msgs::msg::Clock;
 
 int main(int argc, char ** argv)
 {
   auto program = argparse::ArgumentParser("move_for", "0.2.0");
 
   program.add_argument("-d", "--duration")
-  .help("Duration until finished in seconds, move forever on negative duration")
+  .help("duration until finished in seconds, move forever on negative duration")
   .default_value(-1.0)
   .action([](const std::string & value) {return std::stod(value);});
 
   program.add_argument("-l", "--linear")
-  .help("Set linear speed (x, y, z) in meter per second")
+  .help("set linear speed (x, y, z) in meter per second")
   .nargs(3)
   .default_value(std::vector<double>{0.0, 0.0, 0.0})
   .action([](const std::string & value) {return std::stod(value);});
 
   program.add_argument("-a", "--angular")
-  .help("Set angular speed (x, y, z) in radian per second")
+  .help("set angular speed (x, y, z) in radian per second")
   .nargs(3)
   .default_value(std::vector<double>{0.0, 0.0, 0.0})
   .action([](const std::string & value) {return std::stod(value);});
 
+  program.add_argument("--use-sim-time")
+  .help("use simulation time to measures duration")
+  .default_value(false)
+  .implicit_value(true);
+
   double target_duration;
   bool move_forever;
+
+  bool use_sim_time;
 
   std::vector<double> linear;
   std::vector<double> angular;
@@ -62,6 +71,8 @@ int main(int argc, char ** argv)
 
     target_duration = program.get<double>("--duration");
     move_forever = (target_duration < 0.0);
+
+    use_sim_time = program.get<bool>("--use-sim-time");
 
     linear = program.get<std::vector<double>>("--linear");
     angular = program.get<std::vector<double>>("--angular");
@@ -94,35 +105,54 @@ int main(int argc, char ** argv)
       "angular speed\t: " << angular[0] << " " << angular[1] << " " << angular[2] << " rad/s");
   }
 
+  auto update_process = [&](rclcpp::Duration duration) {
+    if (move_forever || duration.seconds() < target_duration) {
+      Twist twist;
+
+      twist.linear.x = linear[0];
+      twist.linear.y = linear[1];
+      twist.linear.z = linear[2];
+
+      twist.angular.x = angular[0];
+      twist.angular.y = angular[1];
+      twist.angular.z = angular[2];
+
+      twist_publisher->publish(twist);
+    } else {
+      RCLCPP_INFO(node->get_logger(), "Finished!");
+
+      // Set movement into stop
+      twist_publisher->publish(Twist());
+
+      rclcpp::shutdown();
+    }
+  };
+
   // Update process
-  auto start_time = node->now();
-  auto update_timer = node->create_wall_timer(
-    10ms, [&]() {
-      auto duration = node->now() - start_time;
+  if (use_sim_time) {
+    std::optional<rclcpp::Time> start_time;
+    auto clock_subscription = node->create_subscription<Clock>(
+      "/clock", 10,
+      [&](const Clock::SharedPtr msg) {
+        auto now = rclcpp::Time(msg->clock.sec, msg->clock.nanosec);
 
-      if (move_forever || duration.seconds() < target_duration) {
-        Twist twist;
+        if (!start_time) {
+          start_time = std::make_optional(now);
+        }
 
-        twist.linear.x = linear[0];
-        twist.linear.y = linear[1];
-        twist.linear.z = linear[2];
+        update_process(now - start_time.value());
+      });
 
-        twist.angular.x = angular[0];
-        twist.angular.y = angular[1];
-        twist.angular.z = angular[2];
+    rclcpp::spin(node);
+  } else {
+    auto start_time = node->now();
+    auto update_timer = node->create_wall_timer(
+      10ms, [&]() {
+        update_process(node->now() - start_time);
+      });
 
-        twist_publisher->publish(twist);
-      } else {
-        RCLCPP_INFO(node->get_logger(), "Finished!");
-
-        // Set movement into stop
-        twist_publisher->publish(Twist());
-
-        rclcpp::shutdown();
-      }
-    });
-
-  rclcpp::spin(node);
+    rclcpp::spin(node);
+  }
 
   rclcpp::shutdown();
 
