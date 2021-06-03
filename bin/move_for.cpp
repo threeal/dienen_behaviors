@@ -33,8 +33,9 @@ int main(int argc, char ** argv)
 {
   auto program = argparse::ArgumentParser("move_for", "0.2.0");
 
-  program.add_argument("duration")
-  .help("Duration until finished in seconds")
+  program.add_argument("-d", "--duration")
+  .help("Duration until finished in seconds, move forever on negative duration")
+  .default_value(-1.0)
   .action([](const std::string & value) {return std::stod(value);});
 
   program.add_argument("-l", "--linear")
@@ -49,11 +50,23 @@ int main(int argc, char ** argv)
   .default_value(std::vector<double>{0.0, 0.0, 0.0})
   .action([](const std::string & value) {return std::stod(value);});
 
+  double target_duration;
+  bool move_forever;
+
+  std::vector<double> linear;
+  std::vector<double> angular;
+
   // Try to parse arguments
   try {
     program.parse_args(argc, argv);
-  } catch (const std::runtime_error & err) {
-    std::cout << err.what() << std::endl;
+
+    target_duration = program.get<double>("--duration");
+    move_forever = (target_duration < 0.0);
+
+    linear = program.get<std::vector<double>>("--linear");
+    angular = program.get<std::vector<double>>("--angular");
+  } catch (const std::exception & e) {
+    std::cout << e.what() << std::endl;
     std::cout << program;
     return 1;
   }
@@ -64,29 +77,30 @@ int main(int argc, char ** argv)
 
   auto twist_publisher = node->create_publisher<Twist>("/cmd_vel", 10);
 
-  auto start_time = node->now();
-
-  auto target_duration = program.get<double>("duration");
-
-  auto linear = program.get<std::vector<double>>("--linear");
-  auto angular = program.get<std::vector<double>>("--angular");
-
-  rclcpp::TimerBase::SharedPtr update_timer;
-
   // Print arguments information
-  RCLCPP_INFO_STREAM(
-    node->get_logger(),
-    "\n" <<
-      "Move for " << program.get<double>("duration") << " seconds with speeds:\n" <<
-      "- linear\t: " << linear[0] << " " << linear[1] << " " << linear[2] << " m/s\n" <<
-      "- angular\t: " << angular[0] << " " << angular[1] << " " << angular[2] << " rad/s");
+  {
+    if (move_forever) {
+      RCLCPP_INFO(node->get_logger(), "Move forever");
+    } else {
+      RCLCPP_INFO_STREAM(node->get_logger(), "Move for " << target_duration << " seconds");
+    }
+
+    RCLCPP_INFO_STREAM(
+      node->get_logger(),
+      "linear speed\t: " << linear[0] << " " << linear[1] << " " << linear[2] << " m/s");
+
+    RCLCPP_INFO_STREAM(
+      node->get_logger(),
+      "angular speed\t: " << angular[0] << " " << angular[1] << " " << angular[2] << " rad/s");
+  }
 
   // Update process
-  update_timer = node->create_wall_timer(
+  auto start_time = node->now();
+  auto update_timer = node->create_wall_timer(
     10ms, [&]() {
       auto duration = node->now() - start_time;
 
-      if (duration.seconds() < target_duration) {
+      if (move_forever || duration.seconds() < target_duration) {
         Twist twist;
 
         twist.linear.x = linear[0];
