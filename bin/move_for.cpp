@@ -19,13 +19,15 @@
 // THE SOFTWARE.
 
 #include <argparse/argparse.hpp>
+#include <geometry_msgs/msg/twist.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <tosshin_cpp/tosshin_cpp.hpp>
 
 #include <memory>
 #include <string>
 
 using namespace std::chrono_literals;
+
+using geometry_msgs::msg::Twist;
 
 int main(int argc, char ** argv)
 {
@@ -63,7 +65,7 @@ int main(int argc, char ** argv)
 
   auto node = std::make_shared<rclcpp::Node>("move_for");
 
-  auto maneuver_consumer = std::make_shared<tosshin_cpp::ManeuverConsumer>(node);
+  auto twist_publisher = node->create_publisher<Twist>("/cmd_vel", 10);
 
   auto start_time = node->now();
 
@@ -81,40 +83,22 @@ int main(int argc, char ** argv)
   update_timer = node->create_wall_timer(
     10ms, [&]() {
       auto duration = node->now() - start_time;
+
       if (duration.seconds() < program.get<double>("duration")) {
-        auto maneuver = maneuver_consumer->get_maneuver();
+        Twist twist;
 
-        maneuver.forward = program.get<double>("--forward");
-        maneuver.left = program.get<double>("--left");
-        maneuver.yaw = program.get<double>("--yaw");
+        twist.linear.x = program.get<double>("--forward");
+        twist.linear.y = program.get<double>("--left");
+        twist.angular.z = program.get<double>("--yaw");
 
-        maneuver_consumer->set_maneuver(maneuver);
+        twist_publisher->publish(twist);
       } else {
         RCLCPP_INFO(node->get_logger(), "Finished!");
 
         // Set maneuver into stop
-        maneuver_consumer->set_maneuver(tosshin_cpp::Maneuver());
+        twist_publisher->publish(Twist());
 
-        // Stop update timer
-        update_timer->cancel();
-
-        // Create a timeout handler
-        auto stop_timeout_timer = node->create_wall_timer(
-          3s, [ = ]() {
-            RCLCPP_ERROR(node->get_logger(), "Failed to stop the maneuver!");
-            rclcpp::shutdown();
-          });
-
-        // Request to stop the maneuver
-        RCLCPP_INFO(node->get_logger(), "Requesting to stop the maneuver...");
-        maneuver_consumer->configure_maneuver(
-          tosshin_cpp::Maneuver(),
-          [ = ](const tosshin_cpp::Maneuver & /*maneuver*/) {
-            RCLCPP_INFO(node->get_logger(), "Maneuver stopped!");
-
-            stop_timeout_timer->cancel();
-            rclcpp::shutdown();
-          });
+        rclcpp::shutdown();
       }
     });
 
