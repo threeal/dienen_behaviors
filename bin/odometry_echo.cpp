@@ -37,15 +37,19 @@ int main(int argc, char ** argv)
     "/odom", 10,
     [node](const Odometry::SharedPtr msg) {
       auto position = msg->pose.pose.position;
+      auto linear = msg->twist.twist.linear;
+      auto angular = msg->twist.twist.angular;
 
       double yaw, pitch, roll;
       tf2::getEulerYPR(msg->pose.pose.orientation, yaw, pitch, roll);
 
       RCLCPP_INFO_STREAM(
         node->get_logger(),
-        "\nposition\t:" << position.x << ", " << position.y << ", " << position.z <<
-          "\norientation\t:" <<
-          tf2Degrees(yaw) << ", " << tf2Degrees(pitch) << ", " << tf2Degrees(roll));
+        "\nposition\t: " << position.x << ", " << position.y << ", " << position.z <<
+          "\norientation\t: " <<
+          tf2Degrees(yaw) << ", " << tf2Degrees(pitch) << ", " << tf2Degrees(roll) <<
+          "\nlinear vel\t: " << linear.x << ", " << linear.y << ", " << linear.z <<
+          "\nangular vel\t: " << angular.x << ", " << angular.y << ", " << angular.z);
     });
 
   rclcpp::spin(node);
