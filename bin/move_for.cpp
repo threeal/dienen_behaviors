@@ -25,6 +25,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 using namespace std::chrono_literals;
 
@@ -106,27 +107,27 @@ int main(int argc, char ** argv)
   }
 
   auto update_process = [&](rclcpp::Duration duration) {
-    if (move_forever || duration.seconds() < target_duration) {
-      Twist twist;
+      if (move_forever || duration.seconds() < target_duration) {
+        Twist twist;
 
-      twist.linear.x = linear[0];
-      twist.linear.y = linear[1];
-      twist.linear.z = linear[2];
+        twist.linear.x = linear[0];
+        twist.linear.y = linear[1];
+        twist.linear.z = linear[2];
 
-      twist.angular.x = angular[0];
-      twist.angular.y = angular[1];
-      twist.angular.z = angular[2];
+        twist.angular.x = angular[0];
+        twist.angular.y = angular[1];
+        twist.angular.z = angular[2];
 
-      twist_publisher->publish(twist);
-    } else {
-      RCLCPP_INFO(node->get_logger(), "Finished!");
+        twist_publisher->publish(twist);
+      } else {
+        RCLCPP_INFO(node->get_logger(), "Finished!");
 
-      // Set movement into stop
-      twist_publisher->publish(Twist());
+        // Set movement into stop
+        twist_publisher->publish(Twist());
 
-      rclcpp::shutdown();
-    }
-  };
+        rclcpp::shutdown();
+      }
+    };
 
   // Update process
   if (use_sim_time) {
