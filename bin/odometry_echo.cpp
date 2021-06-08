@@ -20,6 +20,7 @@
 
 #include <nav_msgs/msg/odometry.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <tf2/utils.h>
 
 #include <memory>
 #include <string>
@@ -36,12 +37,15 @@ int main(int argc, char ** argv)
     "/odom", 10,
     [node](const Odometry::SharedPtr msg) {
       auto position = msg->pose.pose.position;
-      auto quart = msg->pose.pose.orientation;
+
+      double yaw, pitch, roll;
+      tf2::getEulerYPR(msg->pose.pose.orientation, yaw, pitch, roll);
 
       RCLCPP_INFO_STREAM(
         node->get_logger(),
         "\nposition\t:" << position.x << ", " << position.y << ", " << position.z <<
-          "\norientation\t:" << quart.x << ", " << quart.y << ", " << quart.z << ", " << quart.w);
+          "\norientation\t:" <<
+          tf2Degrees(yaw) << ", " << tf2Degrees(pitch) << ", " << tf2Degrees(roll));
     });
 
   rclcpp::spin(node);
