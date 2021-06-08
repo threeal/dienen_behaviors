@@ -15,7 +15,9 @@
   <depend>rclcpp</depend>
   <depend>rosgraph_msgs</depend>
   <depend>sensor_msgs</depend>
+  <depend>tf2</depend>
   <depend>tf2_msgs</depend>
+  <depend>tf2_geometry_msgs</depend>
   <depend>tosshin_cpp</depend>
   <exec_depend>rtabmap_ros</exec_depend>
   <test_depend>ament_lint_auto</test_depend>
