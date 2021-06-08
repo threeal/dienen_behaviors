@@ -45,6 +45,7 @@ install(TARGETS ${PROJECT_NAME}
 
 set(EXECUTABLES
   "bin/move_for.cpp"
+  "bin/odometry_echo.cpp"
   "bin/patrol_behavior.cpp"
   "bin/slam_bridge.cpp")
 
