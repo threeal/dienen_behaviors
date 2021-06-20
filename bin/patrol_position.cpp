@@ -38,7 +38,7 @@ using nav_msgs::msg::Odometry;
 
 int main(int argc, char ** argv)
 {
-  auto program = argparse::ArgumentParser("patrol_behavior", "0.2.0");
+  auto program = argparse::ArgumentParser("patrol_position", "0.2.0");
 
   program.add_argument("-r", "--repeat")
   .help("repeat patrol process")
@@ -76,7 +76,7 @@ int main(int argc, char ** argv)
 
   rclcpp::init(argc, argv);
 
-  auto node = std::make_shared<rclcpp::Node>("patrol_behavior");
+  auto node = std::make_shared<rclcpp::Node>("patrol_position");
 
   keisan::Point2 current_position;
   double current_orientation;
