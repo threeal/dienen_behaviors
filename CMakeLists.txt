@@ -24,23 +24,6 @@ foreach(DEPENDENCY ${DEPENDENCIES})
   find_package(${DEPENDENCY} REQUIRED)
 endforeach()
 
-install(DIRECTORY "include" DESTINATION ".")
-
-add_library(${PROJECT_NAME}
-  "src/patrol_behavior.cpp")
-
-ament_target_dependencies(${PROJECT_NAME} ${DEPENDENCIES})
-
-target_include_directories(${PROJECT_NAME} PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
-
-install(TARGETS ${PROJECT_NAME}
-  EXPORT export_${PROJECT_NAME}
-  ARCHIVE DESTINATION "lib"
-  LIBRARY DESTINATION "lib"
-  RUNTIME DESTINATION "bin")
-
 set(EXECUTABLES
   "bin/move_for.cpp"
   "bin/odometry_echo.cpp"
@@ -51,7 +34,7 @@ foreach(EXECUTABLE ${EXECUTABLES})
   get_filename_component(TARGET ${EXECUTABLE} NAME_WE)
 
   add_executable(${TARGET} ${EXECUTABLE})
-  target_link_libraries(${TARGET} ${PROJECT_NAME})
+  ament_target_dependencies(${TARGET} ${DEPENDENCIES})
 
   install(TARGETS ${TARGET}
     DESTINATION "lib/${PROJECT_NAME}")
@@ -66,7 +49,5 @@ if(BUILD_TESTING)
 endif()
 
 ament_export_dependencies(${DEPENDENCIES})
-ament_export_include_directories("include")
-ament_export_libraries(${PROJECT_NAME})
 
 ament_package()
