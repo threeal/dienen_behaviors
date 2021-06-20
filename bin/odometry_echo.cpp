@@ -47,7 +47,7 @@ int main(int argc, char ** argv)
         node->get_logger(),
         "\nposition\t: " << position.x << ", " << position.y << ", " << position.z <<
           "\norientation\t: " <<
-          tf2Degrees(yaw) << ", " << tf2Degrees(pitch) << ", " << tf2Degrees(roll) <<
+          yaw << ", " << pitch << ", " << roll <<
           "\nlinear vel\t: " << linear.x << ", " << linear.y << ", " << linear.z <<
           "\nangular vel\t: " << angular.x << ", " << angular.y << ", " << angular.z);
     });
