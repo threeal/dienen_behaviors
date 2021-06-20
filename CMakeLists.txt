@@ -27,7 +27,7 @@ endforeach()
 set(EXECUTABLES
   "bin/move_for.cpp"
   "bin/odometry_echo.cpp"
-  "bin/patrol_behavior.cpp"
+  "bin/patrol_position.cpp"
   "bin/slam_bridge.cpp")
 
 foreach(EXECUTABLE ${EXECUTABLES})

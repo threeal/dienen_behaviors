@@ -45,15 +45,34 @@ int main(int argc, char ** argv)
   .default_value(false)
   .implicit_value(true);
 
+  program.add_argument("-l", "--linear-speed")
+  .help("set maximum linear speed in meter per second")
+  .default_value(1.0)
+  .action([](const std::string & value) {return std::stod(value);});
+
+  program.add_argument("-a", "--angular-speed")
+  .help("set maximum angular speed in radian per second")
+  .default_value(1.0)
+  .action([](const std::string & value) {return std::stod(value);});
+
   program.add_argument("points")
   .help("list of target points in `x1 y1 x2 y2 ...` format")
   .remaining();
 
-  std::list<keisan::Point2> target_points;
   bool repeat;
+
+  double linear_speed;
+  double angular_speed;
+
+  std::list<keisan::Point2> target_points;
 
   try {
     program.parse_args(argc, argv);
+
+    repeat = program.get<bool>("--repeat");
+
+    linear_speed = program.get<double>("--linear-speed");
+    angular_speed = program.get<double>("--angular-speed");
 
     // Parse target points
     auto points = program.get<std::vector<std::string>>("points");
@@ -66,8 +85,6 @@ int main(int argc, char ** argv)
         target_points.push_back({stod(points[i - 1]), stod(points[i])});
       }
     }
-
-    repeat = program.get<bool>("--repeat");
   } catch (const std::exception & e) {
     std::cout << e.what() << std::endl;
     std::cout << program;
@@ -120,11 +137,13 @@ int main(int argc, char ** argv)
         double direction = (*target_point - current_position).direction();
         double delta = keisan::delta_deg(current_orientation, keisan::rad_to_deg(direction));
 
-        twist.angular.z = keisan::clamp_number(keisan::deg_to_rad(delta) * 3, -2.0, 2.0);
+        twist.angular.z = keisan::clamp_number(
+          keisan::deg_to_rad(delta) * 3, -angular_speed, angular_speed);
       }
 
       // Calculate a new target linear movement
-      double forward = keisan::map_number(std::abs(twist.angular.z), 0.0, 2.0 / 3, 1.0, 0.0);
+      double forward = keisan::map_number(
+        std::abs(twist.angular.z), 0.0, angular_speed / 3, linear_speed, 0.0);
       twist.linear.x = std::max(forward, 0.0);
 
       twist_publisher->publish(twist);
