@@ -141,9 +141,12 @@ int main(int argc, char ** argv)
 
       if (holonomic_mode) {
         auto delta_position = *target_point - current_position;
+        if (delta_position.magnitude() > 1.0) {
+          delta_position = delta_position.normalize();
+        }
 
-        twist.linear.x = keisan::clamp_number(delta_position.x * 3, -linear_speed, linear_speed);
-        twist.linear.y = keisan::clamp_number(delta_position.y * 3, -linear_speed, linear_speed);
+        twist.linear.x = delta_position.x * linear_speed;
+        twist.linear.y = delta_position.y * linear_speed;
       } else {
         // Calculate a new target angular movement
         {
