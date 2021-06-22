@@ -45,6 +45,11 @@ int main(int argc, char ** argv)
   .default_value(false)
   .implicit_value(true);
 
+  program.add_argument("--holonomic-mode")
+  .help("move robot in holonomic mode (strafing)")
+  .default_value(false)
+  .implicit_value(true);
+
   program.add_argument("-l", "--linear-speed")
   .help("set maximum linear speed in meter per second")
   .default_value(1.0)
@@ -60,6 +65,7 @@ int main(int argc, char ** argv)
   .remaining();
 
   bool repeat;
+  bool holonomic_mode;
 
   double linear_speed;
   double angular_speed;
@@ -70,6 +76,7 @@ int main(int argc, char ** argv)
     program.parse_args(argc, argv);
 
     repeat = program.get<bool>("--repeat");
+    holonomic_mode = program.get<bool>("--holonomic-mode");
 
     linear_speed = program.get<double>("--linear-speed");
     angular_speed = program.get<double>("--angular-speed");
@@ -132,19 +139,29 @@ int main(int argc, char ** argv)
         }
       }
 
-      // Calculate a new target angular movement
-      {
-        double direction = (*target_point - current_position).direction();
-        double delta = keisan::delta_deg(current_orientation, keisan::rad_to_deg(direction));
+      if (holonomic_mode) {
+        auto delta_position = *target_point - current_position;
+        if (delta_position.magnitude() > 1.0) {
+          delta_position = delta_position.normalize();
+        }
 
-        twist.angular.z = keisan::clamp_number(
-          keisan::deg_to_rad(delta) * 3, -angular_speed, angular_speed);
+        twist.linear.x = delta_position.x * linear_speed;
+        twist.linear.y = delta_position.y * linear_speed;
+      } else {
+        // Calculate a new target angular movement
+        {
+          double direction = (*target_point - current_position).direction();
+          double delta = keisan::delta_deg(current_orientation, keisan::rad_to_deg(direction));
+
+          twist.angular.z = keisan::clamp_number(
+            keisan::deg_to_rad(delta) * 3, -angular_speed, angular_speed);
+        }
+
+        // Calculate a new target linear movement
+        double forward = keisan::map_number(
+          std::abs(twist.angular.z), 0.0, angular_speed / 3, linear_speed, 0.0);
+        twist.linear.x = std::max(forward, 0.0);
       }
-
-      // Calculate a new target linear movement
-      double forward = keisan::map_number(
-        std::abs(twist.angular.z), 0.0, angular_speed / 3, linear_speed, 0.0);
-      twist.linear.x = std::max(forward, 0.0);
 
       twist_publisher->publish(twist);
     });
