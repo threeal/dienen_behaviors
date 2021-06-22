@@ -47,8 +47,10 @@ int main(int argc, char ** argv)
       RCLCPP_INFO_STREAM(
         node->get_logger(),
         "\nposition\t: " << position.x << ", " << position.y << ", " << position.z <<
-          "\norientation\t: " << keisan::rad_to_deg(yaw) << ", " <<
-          keisan::rad_to_deg(pitch) << ", " << keisan::rad_to_deg(roll) <<
+          "\norientation\t: " <<
+          keisan::make_radian(yaw).degree() << ", " <<
+          keisan::make_radian(pitch).degree() << ", " <<
+          keisan::make_radian(roll).degree() <<
           "\nlinear vel\t: " << linear.x << ", " << linear.y << ", " << linear.z <<
           "\nangular vel\t: " << angular.x << ", " << angular.y << ", " << angular.z);
     });

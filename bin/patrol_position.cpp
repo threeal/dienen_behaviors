@@ -103,7 +103,7 @@ int main(int argc, char ** argv)
   auto node = std::make_shared<rclcpp::Node>("patrol_position");
 
   keisan::Point2 current_position;
-  double current_orientation;
+  keisan::Angle current_orientation;
   auto odometry_subscription = node->create_subscription<Odometry>(
     "/odom", 10,
     [&](const Odometry::SharedPtr msg) {
@@ -111,7 +111,7 @@ int main(int argc, char ** argv)
 
       double yaw, pitch, roll;
       tf2::getEulerYPR(msg->pose.pose.orientation, yaw, pitch, roll);
-      current_orientation = tf2Degrees(yaw);
+      current_orientation = keisan::make_radian(yaw);
     });
 
   auto twist_publisher = node->create_publisher<Twist>("/cmd_vel", 10);
@@ -150,11 +150,10 @@ int main(int argc, char ** argv)
       } else {
         // Calculate a new target angular movement
         {
-          double direction = (*target_point - current_position).direction();
-          double delta = keisan::delta_deg(current_orientation, keisan::rad_to_deg(direction));
+          auto direction = (*target_point - current_position).direction();
+          auto delta = direction.difference_to(current_orientation);
 
-          twist.angular.z = keisan::clamp_number(
-            keisan::deg_to_rad(delta) * 3, -angular_speed, angular_speed);
+          twist.angular.z = keisan::clamp_number(delta.radian() * 3, -angular_speed, angular_speed);
         }
 
         // Calculate a new target linear movement
