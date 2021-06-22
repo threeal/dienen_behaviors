@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#include <keisan/keisan.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <tf2/utils.h>
@@ -46,8 +47,8 @@ int main(int argc, char ** argv)
       RCLCPP_INFO_STREAM(
         node->get_logger(),
         "\nposition\t: " << position.x << ", " << position.y << ", " << position.z <<
-          "\norientation\t: " <<
-          yaw << ", " << pitch << ", " << roll <<
+          "\norientation\t: " << keisan::rad_to_deg(yaw) << ", " <<
+          keisan::rad_to_deg(pitch) << ", " << keisan::rad_to_deg(roll) <<
           "\nlinear vel\t: " << linear.x << ", " << linear.y << ", " << linear.z <<
           "\nangular vel\t: " << angular.x << ", " << angular.y << ", " << angular.z);
     });
