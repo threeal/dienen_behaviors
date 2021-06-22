@@ -56,8 +56,8 @@ int main(int argc, char ** argv)
 
       // Convert orientation from equler angles to quaternion
       {
-        double cy = cos(keisan::deg_to_rad(odometry.orientation.yaw) * 0.5);
-        double sy = sin(keisan::deg_to_rad(odometry.orientation.yaw) * 0.5);
+        double cy = keisan::cos(keisan::make_degree(odometry.orientation.yaw) * 0.5);
+        double sy = keisan::sin(keisan::make_degree(odometry.orientation.yaw) * 0.5);
         double cp = cos(0.0);
         double sp = sin(0.0);
         double cr = cos(0.0);
