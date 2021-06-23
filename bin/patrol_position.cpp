@@ -51,13 +51,18 @@ int main(int argc, char ** argv)
   .implicit_value(true);
 
   program.add_argument("-l", "--linear-speed")
-  .help("set maximum linear speed in meter per second")
+  .help("set maximum linear speed in metre per second")
   .default_value(1.0)
   .action([](const std::string & value) {return std::stod(value);});
 
   program.add_argument("-a", "--angular-speed")
   .help("set maximum angular speed in radian per second")
   .default_value(1.0)
+  .action([](const std::string & value) {return std::stod(value);});
+
+  program.add_argument("-p", "--precision")
+  .help("set target point precision in metre")
+  .default_value(0.25)
   .action([](const std::string & value) {return std::stod(value);});
 
   program.add_argument("points")
@@ -70,6 +75,8 @@ int main(int argc, char ** argv)
   double linear_speed;
   double angular_speed;
 
+  double precision;
+
   std::list<keisan::Point2> target_points;
 
   try {
@@ -80,6 +87,8 @@ int main(int argc, char ** argv)
 
     linear_speed = program.get<double>("--linear-speed");
     angular_speed = program.get<double>("--angular-speed");
+
+    precision = program.get<double>("--precision");
 
     // Parse target points
     auto points = program.get<std::vector<std::string>>("points");
@@ -122,8 +131,7 @@ int main(int argc, char ** argv)
       Twist twist;
 
       // Shift target point if near
-      auto distance = keisan::Point2::distance_between(current_position, *target_point);
-      if (distance <= 0.3) {
+      if (current_position.distance_to(*target_point) <= precision) {
         ++target_point;
         if (target_point == target_points.end()) {
           if (repeat) {
@@ -140,24 +148,24 @@ int main(int argc, char ** argv)
       }
 
       if (holonomic_mode) {
-        auto delta_position = *target_point - current_position;
-        if (delta_position.magnitude() > 1.0) {
-          delta_position = delta_position.normalize();
+        auto velocity = target_point->translate(-current_position).rotate(-current_orientation);
+        if (velocity.magnitude() > 1.0) {
+          velocity = velocity.normalize();
         }
 
-        twist.linear.x = delta_position.x * linear_speed;
-        twist.linear.y = delta_position.y * linear_speed;
+        twist.linear.x = velocity.x * linear_speed;
+        twist.linear.y = velocity.y * linear_speed;
       } else {
         // Calculate a new target angular movement
         {
-          auto direction = (*target_point - current_position).direction();
-          auto delta = direction.difference_to(current_orientation);
+          auto direction = current_position.direction_to(*target_point);
+          auto delta = current_orientation.difference_to(direction);
 
-          twist.angular.z = keisan::clamp_number(delta.radian() * 3, -angular_speed, angular_speed);
+          twist.angular.z = keisan::clamp(delta.radian() * 3, -angular_speed, angular_speed);
         }
 
         // Calculate a new target linear movement
-        double forward = keisan::map_number(
+        double forward = keisan::map(
           std::abs(twist.angular.z), 0.0, angular_speed / 3, linear_speed, 0.0);
         twist.linear.x = std::max(forward, 0.0);
       }

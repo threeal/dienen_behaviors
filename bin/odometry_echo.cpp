@@ -41,16 +41,20 @@ int main(int argc, char ** argv)
       auto linear = msg->twist.twist.linear;
       auto angular = msg->twist.twist.angular;
 
-      double yaw, pitch, roll;
-      tf2::getEulerYPR(msg->pose.pose.orientation, yaw, pitch, roll);
+      auto orientation = keisan::Quaternion(
+        msg->pose.pose.orientation.x,
+        msg->pose.pose.orientation.y,
+        msg->pose.pose.orientation.z,
+        msg->pose.pose.orientation.w).euler();
 
       RCLCPP_INFO_STREAM(
         node->get_logger(),
-        "\nposition\t: " << position.x << ", " << position.y << ", " << position.z <<
+        std::fixed << std::setprecision(1) <<
+          "\nposition\t: " << position.x << ", " << position.y << ", " << position.z <<
           "\norientation\t: " <<
-          keisan::make_radian(yaw).degree() << ", " <<
-          keisan::make_radian(pitch).degree() << ", " <<
-          keisan::make_radian(roll).degree() <<
+          orientation.roll.degree() << ", " <<
+          orientation.pitch.degree() << ", " <<
+          orientation.yaw.degree() <<
           "\nlinear vel\t: " << linear.x << ", " << linear.y << ", " << linear.z <<
           "\nangular vel\t: " << angular.x << ", " << angular.y << ", " << angular.z);
     });
