@@ -148,13 +148,13 @@ int main(int argc, char ** argv)
       }
 
       if (holonomic_mode) {
-        auto delta_position = *target_point - current_position;
-        if (delta_position.magnitude() > 1.0) {
-          delta_position = delta_position.normalize();
+        auto velocity = target_point->translate(-current_position).rotate(-current_orientation);
+        if (velocity.magnitude() > 1.0) {
+          velocity = velocity.normalize();
         }
 
-        twist.linear.x = delta_position.x * linear_speed;
-        twist.linear.y = delta_position.y * linear_speed;
+        twist.linear.x = velocity.x * linear_speed;
+        twist.linear.y = velocity.y * linear_speed;
       } else {
         // Calculate a new target angular movement
         {
