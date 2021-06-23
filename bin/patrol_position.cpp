@@ -122,8 +122,7 @@ int main(int argc, char ** argv)
       Twist twist;
 
       // Shift target point if near
-      auto distance = keisan::Point2::distance_between(current_position, *target_point);
-      if (distance <= 0.3) {
+      if (current_position.distance_to(*target_point) <= 0.3) {
         ++target_point;
         if (target_point == target_points.end()) {
           if (repeat) {
@@ -150,14 +149,14 @@ int main(int argc, char ** argv)
       } else {
         // Calculate a new target angular movement
         {
-          auto direction = (*target_point - current_position).direction();
-          auto delta = direction.difference_to(current_orientation);
+          auto direction = current_position.direction_to(*target_point);
+          auto delta = current_orientation.difference_to(direction);
 
-          twist.angular.z = keisan::clamp_number(delta.radian() * 3, -angular_speed, angular_speed);
+          twist.angular.z = keisan::clamp(delta.radian() * 3, -angular_speed, angular_speed);
         }
 
         // Calculate a new target linear movement
-        double forward = keisan::map_number(
+        double forward = keisan::map(
           std::abs(twist.angular.z), 0.0, angular_speed / 3, linear_speed, 0.0);
         twist.linear.x = std::max(forward, 0.0);
       }
