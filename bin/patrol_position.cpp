@@ -51,13 +51,18 @@ int main(int argc, char ** argv)
   .implicit_value(true);
 
   program.add_argument("-l", "--linear-speed")
-  .help("set maximum linear speed in meter per second")
+  .help("set maximum linear speed in metre per second")
   .default_value(1.0)
   .action([](const std::string & value) {return std::stod(value);});
 
   program.add_argument("-a", "--angular-speed")
   .help("set maximum angular speed in radian per second")
   .default_value(1.0)
+  .action([](const std::string & value) {return std::stod(value);});
+
+  program.add_argument("-p", "--precision")
+  .help("set target point precision in metre")
+  .default_value(0.25)
   .action([](const std::string & value) {return std::stod(value);});
 
   program.add_argument("points")
@@ -70,6 +75,8 @@ int main(int argc, char ** argv)
   double linear_speed;
   double angular_speed;
 
+  double precision;
+
   std::list<keisan::Point2> target_points;
 
   try {
@@ -80,6 +87,8 @@ int main(int argc, char ** argv)
 
     linear_speed = program.get<double>("--linear-speed");
     angular_speed = program.get<double>("--angular-speed");
+
+    precision = program.get<double>("--precision");
 
     // Parse target points
     auto points = program.get<std::vector<std::string>>("points");
@@ -122,7 +131,7 @@ int main(int argc, char ** argv)
       Twist twist;
 
       // Shift target point if near
-      if (current_position.distance_to(*target_point) <= 0.3) {
+      if (current_position.distance_to(*target_point) <= precision) {
         ++target_point;
         if (target_point == target_points.end()) {
           if (repeat) {
