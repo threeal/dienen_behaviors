@@ -19,11 +19,9 @@
 // THE SOFTWARE.
 
 #include <argparse/argparse.hpp>
-#include <geometry_msgs/msg/twist.hpp>
 #include <keisan/keisan.hpp>
-#include <nav_msgs/msg/odometry.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <tf2/utils.h>
+#include <tosshin/tosshin.hpp>
 
 #include <algorithm>
 #include <list>
@@ -31,10 +29,10 @@
 #include <string>
 #include <vector>
 
-using namespace std::chrono_literals;
+namespace tsn = tosshin;
+namespace ksn = keisan;
 
-using geometry_msgs::msg::Twist;
-using nav_msgs::msg::Odometry;
+using namespace std::chrono_literals;
 
 int main(int argc, char ** argv)
 {
@@ -77,7 +75,7 @@ int main(int argc, char ** argv)
 
   double precision;
 
-  std::list<keisan::Point2> target_points;
+  std::list<ksn::Point2> target_points;
 
   try {
     program.parse_args(argc, argv);
@@ -111,24 +109,23 @@ int main(int argc, char ** argv)
 
   auto node = std::make_shared<rclcpp::Node>("patrol_position");
 
-  keisan::Point2 current_position;
-  keisan::Angle current_orientation;
-  auto odometry_subscription = node->create_subscription<Odometry>(
+  ksn::Point2 current_position;
+  ksn::Angle current_orientation;
+  auto odometry_subscription = node->create_subscription<tsn::msg::Odometry>(
     "/odom", 10,
-    [&](const Odometry::SharedPtr msg) {
-      current_position = keisan::Point2(msg->pose.pose.position.x, msg->pose.pose.position.y);
+    [&](const tsn::msg::Odometry::SharedPtr msg) {
+      current_position = ksn::Point2(msg->pose.pose.position.x, msg->pose.pose.position.y);
 
-      double yaw, pitch, roll;
-      tf2::getEulerYPR(msg->pose.pose.orientation, yaw, pitch, roll);
-      current_orientation = keisan::make_radian(yaw);
+      auto quaternion = tsn::extract_quaternion(msg->pose.pose.orientation);
+      current_orientation = quaternion.euler().yaw;
     });
 
-  auto twist_publisher = node->create_publisher<Twist>("/cmd_vel", 10);
+  auto twist_publisher = node->create_publisher<tsn::msg::Twist>("/cmd_vel", 10);
 
   auto target_point = target_points.begin();
   auto update_timer = node->create_wall_timer(
     10ms, [&]() {
-      Twist twist;
+      tsn::msg::Twist twist;
 
       // Shift target point if near
       if (current_position.distance_to(*target_point) <= precision) {
@@ -140,7 +137,7 @@ int main(int argc, char ** argv)
             RCLCPP_INFO(node->get_logger(), "Finished!");
 
             // Set movement into stop
-            twist_publisher->publish(Twist());
+            twist_publisher->publish(tsn::msg::Twist());
 
             rclcpp::shutdown();
           }
@@ -153,19 +150,18 @@ int main(int argc, char ** argv)
           velocity = velocity.normalize();
         }
 
-        twist.linear.x = velocity.x * linear_speed;
-        twist.linear.y = velocity.y * linear_speed;
+        twist.linear = tsn::make_vector3_xy(velocity * linear_speed);
       } else {
         // Calculate a new target angular movement
         {
           auto direction = current_position.direction_to(*target_point);
           auto delta = current_orientation.difference_to(direction);
 
-          twist.angular.z = keisan::clamp(delta.radian() * 3, -angular_speed, angular_speed);
+          twist.angular.z = ksn::clamp(delta.radian() * 3, -angular_speed, angular_speed);
         }
 
         // Calculate a new target linear movement
-        double forward = keisan::map(
+        double forward = ksn::map(
           std::abs(twist.angular.z), 0.0, angular_speed / 3, linear_speed, 0.0);
         twist.linear.x = std::max(forward, 0.0);
       }

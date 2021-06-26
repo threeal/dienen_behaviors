@@ -16,9 +16,7 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 
-set(DEPENDENCIES
-  argparse geometry_msgs keisan nav_msgs rclcpp rosgraph_msgs
-  sensor_msgs tf2 tf2_geometry_msgs tf2_msgs tosshin_cpp)
+set(DEPENDENCIES argparse keisan rclcpp rosgraph_msgs tosshin)
 
 foreach(DEPENDENCY ${DEPENDENCIES})
   find_package(${DEPENDENCY} REQUIRED)
