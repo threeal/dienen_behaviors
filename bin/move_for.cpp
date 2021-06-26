@@ -19,17 +19,18 @@
 // THE SOFTWARE.
 
 #include <argparse/argparse.hpp>
-#include <geometry_msgs/msg/twist.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rosgraph_msgs/msg/clock.hpp>
+#include <tosshin/tosshin.hpp>
 
 #include <memory>
 #include <string>
 #include <vector>
 
+namespace tsn = tosshin;
+
 using namespace std::chrono_literals;
 
-using geometry_msgs::msg::Twist;
 using rosgraph_msgs::msg::Clock;
 
 int main(int argc, char ** argv)
@@ -87,7 +88,7 @@ int main(int argc, char ** argv)
 
   auto node = std::make_shared<rclcpp::Node>("move_for");
 
-  auto twist_publisher = node->create_publisher<Twist>("/cmd_vel", 10);
+  auto twist_publisher = node->create_publisher<tsn::msg::Twist>("/cmd_vel", 10);
 
   // Print arguments information
   {
@@ -108,7 +109,7 @@ int main(int argc, char ** argv)
 
   auto update_process = [&](rclcpp::Duration duration) {
       if (move_forever || duration.seconds() < target_duration) {
-        Twist twist;
+        tsn::msg::Twist twist;
 
         twist.linear.x = linear[0];
         twist.linear.y = linear[1];
@@ -123,7 +124,7 @@ int main(int argc, char ** argv)
         RCLCPP_INFO(node->get_logger(), "Finished!");
 
         // Set movement into stop
-        twist_publisher->publish(Twist());
+        twist_publisher->publish(tsn::msg::Twist());
 
         rclcpp::shutdown();
       }

@@ -16,9 +16,7 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 
-set(DEPENDENCIES
-  argparse geometry_msgs keisan nav_msgs rclcpp rosgraph_msgs
-  sensor_msgs tf2 tf2_geometry_msgs tf2_msgs tosshin_cpp)
+set(DEPENDENCIES argparse keisan rclcpp rosgraph_msgs tosshin)
 
 foreach(DEPENDENCY ${DEPENDENCIES})
   find_package(${DEPENDENCY} REQUIRED)
@@ -26,9 +24,8 @@ endforeach()
 
 set(EXECUTABLES
   "bin/move_for.cpp"
-  "bin/odometry_echo.cpp"
-  "bin/patrol_position.cpp"
-  "bin/slam_bridge.cpp")
+  "bin/patrol_position.cpp")
+  # "bin/slam_bridge.cpp")
 
 foreach(EXECUTABLE ${EXECUTABLES})
   get_filename_component(TARGET ${EXECUTABLE} NAME_WE)
@@ -40,8 +37,8 @@ foreach(EXECUTABLE ${EXECUTABLES})
     DESTINATION "lib/${PROJECT_NAME}")
 endforeach()
 
-install(DIRECTORY launch
-  DESTINATION "share/${PROJECT_NAME}")
+# install(DIRECTORY launch
+#   DESTINATION "share/${PROJECT_NAME}")
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
