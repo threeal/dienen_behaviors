@@ -26,8 +26,8 @@ endforeach()
 
 set(EXECUTABLES
   "bin/move_for.cpp"
-  "bin/patrol_position.cpp"
-  "bin/slam_bridge.cpp")
+  "bin/patrol_position.cpp")
+  # "bin/slam_bridge.cpp")
 
 foreach(EXECUTABLE ${EXECUTABLES})
   get_filename_component(TARGET ${EXECUTABLE} NAME_WE)
@@ -39,8 +39,8 @@ foreach(EXECUTABLE ${EXECUTABLES})
     DESTINATION "lib/${PROJECT_NAME}")
 endforeach()
 
-install(DIRECTORY launch
-  DESTINATION "share/${PROJECT_NAME}")
+# install(DIRECTORY launch
+#   DESTINATION "share/${PROJECT_NAME}")
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
