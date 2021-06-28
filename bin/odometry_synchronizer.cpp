@@ -88,7 +88,7 @@ int main(int argc, char ** argv)
   RCLCPP_INFO_STREAM(
     node->get_logger(),
     "Synchronizing odometry with " << camera_info_subscription->get_topic_name() <<
-    " into " << odometry_publisher->get_topic_name());
+      " into " << odometry_publisher->get_topic_name());
 
   rclcpp::spin(node);
 
