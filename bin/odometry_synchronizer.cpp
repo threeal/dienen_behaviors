@@ -34,16 +34,22 @@ int main(int argc, char ** argv)
 {
   auto program = argparse::ArgumentParser("odometry_synchronizer", "0.2.0");
 
-  program.add_argument("camera_info_topic")
+  program.add_argument("camera-info-topic")
+  .help("camera info topic name");
+
+  program.add_argument("--odometry-target-topic")
+  .default_value("/odom")
   .help("camera info topic name");
 
   std::string camera_info_topic;
+  std::string odometry_target_topic;
 
   // Try to parse arguments
   try {
     program.parse_args(argc, argv);
 
-    camera_info_topic = program.get<std::string>("camera_info_topic");
+    camera_info_topic = program.get<std::string>("camera-info-topic");
+    odometry_target_topic = program.get<std::string>("--odometry-target-topic");
   } catch (const std::exception & e) {
     std::cout << e.what() << std::endl;
     std::cout << program;
@@ -54,7 +60,7 @@ int main(int argc, char ** argv)
 
   auto node = std::make_shared<rclcpp::Node>("odometry_synchronizer");
 
-  auto odometry_publisher = node->create_publisher<tsn::msg::Odometry>("/odom", 10);
+  auto odometry_publisher = node->create_publisher<tsn::msg::Odometry>(odometry_target_topic, 10);
   auto tf_publisher = node->create_publisher<tsn::msg::TFMessage>("/tf", 10);
 
   tsn::msg::Odometry last_odometry;
@@ -78,6 +84,11 @@ int main(int argc, char ** argv)
       tf.transforms.push_back(tsn::make_transform_stamped(odometry));
       tf_publisher->publish(tf);
     });
+
+  RCLCPP_INFO_STREAM(
+    node->get_logger(),
+    "Synchronizing odometry with " << camera_info_subscription->get_topic_name() <<
+    " into " << odometry_publisher->get_topic_name());
 
   rclcpp::spin(node);
 
