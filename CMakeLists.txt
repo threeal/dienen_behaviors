@@ -16,7 +16,7 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 
-set(DEPENDENCIES argparse keisan rclcpp rosgraph_msgs tosshin)
+set(DEPENDENCIES argparse keisan rclcpp rosgraph_msgs sensor_msgs tosshin)
 
 foreach(DEPENDENCY ${DEPENDENCIES})
   find_package(${DEPENDENCY} REQUIRED)
@@ -24,6 +24,7 @@ endforeach()
 
 set(EXECUTABLES
   "bin/move_for.cpp"
+  "bin/odometry_synchronizer.cpp"
   "bin/patrol_position.cpp")
   # "bin/slam_bridge.cpp")
 

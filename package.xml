@@ -12,6 +12,7 @@
   <depend>libargparse-dev</depend>
   <depend>rclcpp</depend>
   <depend>rosgraph_msgs</depend>
+  <depend>sensor_msgs</depend>
   <!-- <depend>tf2_msgs</depend> -->
   <!-- <depend>tf2_geometry_msgs</depend> -->
   <depend>tosshin</depend>
