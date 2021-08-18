@@ -110,7 +110,7 @@ int main(int argc, char ** argv)
   auto node = std::make_shared<rclcpp::Node>("patrol_position");
 
   ksn::Point2 current_position;
-  ksn::Angle current_orientation;
+  ksn::Angle<double> current_orientation;
   auto odometry_subscription = node->create_subscription<tsn::msg::Odometry>(
     "/odom", 10,
     [&](const tsn::msg::Odometry::SharedPtr msg) {
